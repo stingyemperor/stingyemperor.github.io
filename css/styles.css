@@ -201,6 +201,7 @@
 /* Main Content CSS */
 .main {
   background-color: #141414;
+  /* background-image: url('../images/background.gif'); */
 }
 
 .main__container {
@@ -211,6 +212,7 @@
   margin: 0 auto;
   height: 90vh;
   background-color: #0e0d0d;
+  /* background-image: url('../images/background.gif'); */
   z-index: 1;
   width: 100%;
   max-width: 1300px;

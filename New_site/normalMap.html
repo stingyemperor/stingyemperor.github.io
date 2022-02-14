@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Normal Map</title>
+  <link rel="stylesheet" href="css/style_n.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
+    integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
+    crossorigin="anonymous" defer>
+    </script>
+  <script src="js/webGl.js" defer></script>
+  <script type="text/javascript" src="js/test.js"></script>
+  <script type="text/javascript" src="js/addLight.js"></script>
+
+  <script id="vertex-shader" type="x-shader/x-vertex">
+
+
+    attribute vec4 vPosition;
+    attribute vec3 vNormal;
+    attribute vec2 texcoord;
+
+    varying vec2 f_texcoord;
+    varying vec3 fNormal;
+    
+    varying vec3 pLight;
+
+    varying vec2 mouseXYcopy;
+
+    uniform vec2 mouseXY;
+    uniform float pointLightDis;
+    
+    void main()
+    {
+
+        gl_Position = vPosition;
+
+        vec4 transformedNormal = vec4(vNormal, 1.0) /* + vec4(0.0, 0.0, 0.5, 0.0) */;
+        fNormal = normalize(transformedNormal.xyz);
+
+        float x = mouseXY.x * 2.0 ;
+        float y = mouseXY.y * 2.0;
+        float z = pointLightDis[i];
+        pLight[i] = vec3(x, -y, z + 0.05);
+
+        mouseXYcopy = mouseXY;
+        f_texcoord = texcoord;
+    }
+</script>
+
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+  precision mediump float;
+
+        varying vec2 f_texcoord;
+        varying vec3 fNormal;//(0,0,1)
+
+        varying float lightN;
+        
+        varying vec3 pLight;
+
+        varying vec2 mouseXYcopy;
+        
+        uniform sampler2D uSamplerColor0, uSamplerColor1, uSamplerNormal, uSamplerForeground, uSamplerBackground, uSamplerAlpha;
+
+        uniform int currentLight;
+
+        uniform bool lightsOnly;
+
+        uniform vec3 lightColor;
+        uniform float lightIntensity;
+        uniform float pointLightDecay;
+        
+        uniform bool showDiffuse;
+        uniform bool showSpec;
+        
+        uniform float styleBright, styleDark;
+
+        vec4 normal()
+        {
+            vec4 normalMap = texture2D(uSamplerNormal, vec2(f_texcoord.s, f_texcoord.t) );
+            vec3 normalDisplace = normalMap.rgb;
+            normalDisplace = 2.0*normalDisplace - 1.0;
+            normalDisplace = normalize(normalDisplace);
+            return vec4(normalize(fNormal + normalDisplace), normalMap.a);
+        }
+
+        vec4 diffuse(vec3 n)
+        {
+            vec3 currentP = vec3(f_texcoord.s - 0.5, f_texcoord.t-0.5, 0.0);
+            
+            vec4 color = vec4(0,0,0,1);
+
+
+                    vec3 vLight = normalize( pLight -  );
+
+                    float cosTheta = ( dot(n, vLight) + 1.0 )/2.0;
+                    float t = (cosTheta - styleDark) / (styleBright - styleDark);
+                    if (t>1.0) t=1.0; if (t<0.0) t=0.0;
+                    if ( showDiffuse )
+                    {
+                        float dis = length( pLight- currentP );
+                        
+                        color += (1.0 - t) * vec4(lightColor, 1.0) * lightIntensity;// / ( 1.0 + pointLightDecay[i] * dis *4.0);
+
+                    };
+
+            
+            vec4 T = color;//lightWeight;
+            
+            vec4 c0 = texture2D(uSamplerColor0, vec2(f_texcoord.s, f_texcoord.t) );//dark
+            vec4 c1 = texture2D(uSamplerColor1, vec2(f_texcoord.s, f_texcoord.t) );//bright
+
+            vec4 colorFinal = c0 * (1.0 - T) + c1 * T;
+            
+            if (lightsOnly )
+            {
+                return T;
+            }else{
+                return colorFinal;
+            }
+            
+        }
+        
+        vec3 spec(vec3 n)
+        {
+            vec3 currentP = vec3(f_texcoord.s - 0.5, f_texcoord.t-0.5, 0.0);
+            vec3 finalSpec = vec3(0.0, 0.0, 0.0);
+
+
+            vec3 vLight = normalize( pLight - currentP);
+            if (showSpec)
+            {
+            vec3 specColor = lightColor;
+            vec3 viewVector = vec3(0.0, 0.0, 1.0);
+            vec3 RVector = - vLight + 2.0 * dot(n, vLight) * n ;
+            float temp = dot(RVector, viewVector);
+            if ( temp < 0.0 ) temp = 0.0;
+            float spec = pow(temp, 200.0);
+            finalSpec += specColor * spec;
+            }
+            return finalSpec ;
+        }
+
+      void main(){
+
+        vec4 nn = normal();
+        vec3 n = nn.xyz;
+            
+            //vec3 specular = spec(n);
+            vec4 diffuse = diffuse(n);//+ vec4(specular, 1.0);
+            vec3 specular = spec(n);
+          
+            vec4 background = texture2D(uSamplerBackground, vec2(f_texcoord.s, f_texcoord.t) );
+            vec3 backgroundColor = background.rgb;
+            
+            vec4 finalColor = diffuse;
+
+
+            
+            //finalColor += vec4(specular, 1.0); 
+
+
+            vec4 finalColor_showLightsOnly = finalColor;
+
+            d = nn.a  ;
+            vec3 compBackground = backgroundColor * (1.0 - d) + finalColor.rgb * d;
+            
+            finalColor = vec4(finalColor_showLightsOnly.rgb, 1.0);
+            compBackground = vec3(0,0,0) * (1.0 - d) + finalColor.rgb * d;
+
+            gl_FragColor = vec4(compBackground.rgb, 1.0);
+      }
+
+</script>
+
+<script type="text/javascript" src="js/jquery-2.1.4.js"></script>
+<script type="text/javascript" src="resources/webgl-utils.js"></script>
+<script type="text/javascript" src="resources/initShaders.js"></script>
+<script type="text/javascript" src="resources/MV.js"></script>
+
+
+
+</head>
+
+<body>
+
+  <nav class="navbar">
+    <div class="navbar__container">
+      <a href="/" id="navbar__logo">G5</a>
+      <div class="navbar__toggle" id="mobile-menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+      <ul class="navbar__menu">
+        <li class="navbar__item">
+          <a href="/" class="navbar__links">Home</a>
+        </li>
+        <li class="navbar__item">
+          <a href="/normalMap.html" class="navbar__links">normalMap</a>
+        </li>
+        <li class="navbar__item">
+          <a href="/" class="navbar__links">DepthMap</a>
+        </li>
+        <li class="navbar__btn">
+          <a href="/" class="button">Contact</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+
+  <!-- The sidebar -->
+
+
+  <!-- Page content -->
+  <div class="content">
+    ..
+  </div>
+
+  <div class="main">
+    <div class="main__container">
+      <div class="main__content">
+        <div class="canvas__Container">
+          <div class="sidebar">
+            <a href="Parameter 1">Parameter 1</a>
+            <a href="#Parameter 2">Parameter 2</a>
+            <a href="#Parameter 1">Parameter 1</a>
+          </div>
+          <canvas id="gl-canvas" width="1600" height="920"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Footer Section -->
+  <div class="footer__container">
+    </section>
+
+
+
+</body>
+
+</html>

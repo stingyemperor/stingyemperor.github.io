@@ -1,0 +1,150 @@
+.header
+{
+	background: #ba9;
+	text-align: center;
+}
+
+
+div.maintitle
+
+{
+	background: #ffffff;
+	text-align: center;
+	width: 100%;
+	font-size: 22pt;
+	font-family: Helvetica;
+	font-weight: bold;
+	font-style: normal;
+	color: #ba9;
+	text-transform: uppercase;
+}
+
+div.author
+{
+	background: #ffffff;
+	text-align: center;
+	width: 100%;
+	font-size: 14pt;
+	font-family: Helvetica;
+	font-weight: bold;
+	font-style: normal;
+	color: #ba9;
+}
+
+
+div.sectiontitle
+{
+	text-align: center;
+	width: 100%;
+	font-size: 18pt;
+	font-family: Helvetica;
+	font-weight: bold;
+	font-style: normal;
+	color: #ba9;
+	text-transform: uppercase;
+}
+
+
+div.title
+{
+	background: #123;
+	text-align: center;9
+	width: 100%;
+	font-size: 16pt;
+	font-family: Helvetica;
+	font-weight: bold;
+	font-style: normal;
+	color: #bba;
+	text-transform: uppercase;
+}
+
+div.subtitle
+{
+	background: #123;
+	text-align: center;
+	width: 100%;
+	font-size: 14pt;
+	font-family: Helvetica;
+	font-weight: bold;
+	font-style: normal;
+	color: #bba;
+}
+
+	
+
+div.content
+{
+	background: #ffffff;
+	margin-top: 10pt;
+	margin-left: 2.5%;
+	width: 92.5%;
+	font-family: Helvetica;
+	font-size: 10pt;
+	-webkit-column-count: 1; /* Chrome, Safari, Opera */
+    -moz-column-count: 1; /* Firefox */
+    column-count: 1;
+}
+
+div.content2
+{
+	background: #ffffff;
+	margin-top: 5pt;
+	margin-left: 2.5%;
+	width: 92.5%;
+	font-family: Helvetica;
+	font-size: 10pt;
+}
+
+div.videob
+{
+	width: 500px;
+	padding: 250px;
+	border: 2px solid gray;
+	margin: 0;
+}
+
+table.title
+{
+	
+	background: #ffffff;
+	align: center;
+	width: 100%;
+	}
+
+/*----------------------------
+	CSS3 Animated Navigation
+-----------------------------*/
+
+.fancyNav{
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #76B947;   
+
+}
+
+
+.fancyNav li {
+    float: left;
+}
+
+
+.fancyNav li a{
+    display: block;
+    color: #fea;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+background-color: #76B947;
+
+}
+
+.fancyNav li a:hover:not(.active) {
+    background-color: #3D550C;
+}
+
+
+.fancyNav .active {
+    background-color: #3D550C;
+}

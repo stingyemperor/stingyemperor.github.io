@@ -34,6 +34,8 @@ showSpec[0] = 1;
 var styleBright,
     styleDark;
 
+var day,night;
+
 var alphaR;
 var alphaG;
 var alphaB;
@@ -67,6 +69,8 @@ function initParameters(){
     //style section parameters
     styleBright = 0;
     styleDark = 1;
+    day=0;
+    night=1;
 
     //highlight parameters
     //highlightA = 0.5;
@@ -119,6 +123,7 @@ var showDiffuseLoc;
 var showSpecLoc;
 
 var styleBrightLoc, styleDarkLoc;
+var dayLoc,nightLoc;
 var alphaRLoc, alphaGLoc, alphaBLoc;
 var logIORLoc, BGdisLoc;
 var FGdisLoc;
@@ -314,6 +319,8 @@ window.onload = function init()
 
     styleBrightLoc = gl.getUniformLocation( program, "styleBright");
     styleDarkLoc = gl.getUniformLocation( program, "styleDark");
+    dayLoc = gl.getUniformLocation( program, "day");
+    nightLoc = gl.getUniformLocation( program, "night");
     alphaRLoc = gl.getUniformLocation( program, "alphaR");
     alphaGLoc = gl.getUniformLocation( program, "alphaG");
     alphaBLoc = gl.getUniformLocation( program, "alphaB");
@@ -412,6 +419,8 @@ function render() {
     
     gl.uniform1f(styleBrightLoc, styleBright);
     gl.uniform1f(styleDarkLoc, styleDark);
+    gl.uniform1f(dayLoc,day);
+    gl.uniform1f(nightLoc,night);
     gl.uniform1f(alphaRLoc, alphaR);
     gl.uniform1f(alphaGLoc, alphaG);
     gl.uniform1f(alphaBLoc, alphaB);

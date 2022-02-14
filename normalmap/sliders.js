@@ -36,6 +36,12 @@ $(document).ready(function () {
     	styleDark = slideEvt.value[1];
     });
 
+    $("#day_night_Control_slider").slider({ min: 0, max: 1, value: [day, night], step: 0.01, focus: true });
+    $("#day_night_Control_slider").on("slide", function(slideEvt) {
+    	Day = slideEvt.value[0];
+    	Night = slideEvt.value[1];
+    });
+
 
     /**Alpha**/
 
@@ -233,6 +239,7 @@ function setupLightFunctions(i)
     var pointLGTdecay_val = $(textarea_pLightDecay);
     pointLGTdecay_slider.attr("data-slider-min", 0).attr("data-slider-max", 1).attr("data-slider-step", 0.01).attr("data-slider-value", pointLightDecay[i]).attr("data-slider-tooltip","hide").slider({});
     bindSliderValParamIndex (pointLGTdecay_slider, pointLGTdecay_val, "pointLightDecay", i);
+
 
     ////init colorPicker & add events
     var colorPickerName = "#lightPanel" + i + " .colorPicker";

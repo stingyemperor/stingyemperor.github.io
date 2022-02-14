@@ -97,6 +97,7 @@
         uniform bool showSpec[max_lights];
         
         uniform float styleBright, styleDark;
+        uniform float day, night;
         uniform float alphaR, alphaG, alphaB;
         uniform float logIOR, BGdis;
 
@@ -567,6 +568,17 @@
                           		    <div class = "h7 inlineBlock">Bright</div>   
                             		<div class = "h7 pull-right">Dark</div>
                           	     </div>
+
+                            </div>
+                            <div>
+                                <h6>Day/Night Cycle</h6>
+                                <div class="slider_box">
+                                  <input id="day_night_Control_slider" data-slider-id='customSlider' type="text" class=" span2"   value="" />
+                              </div>
+                                 <div >
+                                    <div class = "h7 inlineBlock">Day</div>   
+                                  <div class = "h7 pull-right">Night</div>
+                                 </div>
                             </div>
                     	</div>	
                     </li>
@@ -931,6 +943,8 @@
                         <input id="pointLGTdecay_slider" data-slider-id='customSlider' type="text" />
                     </div>
                 </div>
+
+
                 
             </div>
         </li>

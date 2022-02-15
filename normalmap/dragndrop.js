@@ -1,4 +1,4 @@
-var image1, image2, image3, image4, image5, image6;
+var image1, image2, image3, image4, image5, image6,image7,image8,image9,image10;
 
 var linkPrefix = "";
 // init vars
@@ -8,7 +8,10 @@ var $container1 = $('#container1'),
 	$container4 = $('#container4'),
 	$container5 = $('#container5'),
 	$container6 = $('#container6'),
-    	$container7 = $('#container7');
+    $container7 = $('#container7'),
+	$container8 = $('#container8'),
+	$container9 = $('#container9'),
+	$container10 = $('#container10');
 sampleButtons = function()
 {
 	var exampleButtons = $(".main_button_container button");
@@ -37,6 +40,10 @@ sampleButtons = function()
 			image4.src = "images/newBottle/reflect.jpg";  //reflection
 			image5.src = "images/newBottle/bg.png";//refraction
 			image6.src = "images/newBottle/alpha.png";
+			image7.src = linkPrefix + "images/day_1.PNG"; //da
+			image8.src = linkPrefix + "images/day_2.PNG"; //da
+			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image10.src = linkPrefix + "images/day_4.PNG"; //da
 		}
 
 		if($(this).text() ==="JarTable")
@@ -58,6 +65,10 @@ sampleButtons = function()
 			image4.src = "images/reflmap.png";  //reflection
 			image5.src = "images/himlaya.png";//refraction
 			image6.src = "images/Links/alpha.png";
+			image7.src = linkPrefix + "images/day_1.PNG"; //da
+			image8.src = linkPrefix + "images/day_2.PNG"; //da
+			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image10.src = linkPrefix + "images/day_4.PNG"; //da
 
 		}
 
@@ -84,6 +95,10 @@ sampleButtons = function()
 			image4.src = "images/Escher/handWithSphere/reflect2.jpg";  //reflection
 			image5.src = "images/Escher/handWithSphere/bg.png";//refraction
 			image6.src = "images/Escher/handWithSphere/alpha1.png";
+			image7.src = linkPrefix + "images/day_1.PNG"; //da
+			image8.src = linkPrefix + "images/day_2.PNG"; //da
+			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image10.src = linkPrefix + "images/day_4.PNG"; //da
 		}
 
 		if($(this).text() ==="Fence")
@@ -105,6 +120,10 @@ sampleButtons = function()
 			image4.src = "images/reflmap.png";  //reflection
 			image5.src = "images/himlaya.png";//refraction
 			image6.src = "images/Fence/alpha.png";
+			image7.src = linkPrefix + "images/day_1.PNG"; //da
+			image8.src = linkPrefix + "images/day_2.PNG"; //da
+			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image10.src = linkPrefix + "images/day_4.PNG"; //da
 
 		}
 		
@@ -120,6 +139,10 @@ sampleButtons = function()
 			image4.src = linkPrefix + "images/dark.png";  //reflection
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
+			image7.src = linkPrefix + "images/day_1.PNG"; //da
+			image8.src = linkPrefix + "images/day_2.PNG"; //da
+			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image10.src = linkPrefix + "images/day_4.PNG"; //da
 			
 			
 			
@@ -138,6 +161,10 @@ sampleButtons = function()
 			image4.src = linkPrefix + "images/dark.png";  //reflection
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
+			image7.src = linkPrefix + "images/day_1.PNG"; //da
+			image8.src = linkPrefix + "images/day_2.PNG"; //da
+			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image10.src = linkPrefix + "images/day_4.PNG"; //da
 			
 		}
 		
@@ -153,6 +180,10 @@ sampleButtons = function()
 			image4.src = linkPrefix + "images/dark.png";  //reflection
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
+			image7.src = linkPrefix + "images/day_1.PNG"; //da
+			image8.src = linkPrefix + "images/day_2.PNG"; //da
+			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image10.src = linkPrefix + "images/day_4.PNG"; //da
 		
 		}
 		
@@ -168,6 +199,10 @@ sampleButtons = function()
 			image4.src = linkPrefix + "images/dark.png";  //reflection
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
+			image7.src = linkPrefix + "images/day_1.PNG"; //da
+			image8.src = linkPrefix + "images/day_2.PNG"; //da
+			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image10.src = linkPrefix + "images/day_4.PNG"; //da
 			
 			
 			
@@ -186,6 +221,10 @@ sampleButtons = function()
 			image4.src = linkPrefix + "images/dark.png";  //reflection
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
+			image7.src = linkPrefix + "images/day_1.PNG"; //da
+			image8.src = linkPrefix + "images/day_2.PNG"; //da
+			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image10.src = linkPrefix + "images/day_4.PNG"; //da
 			
 		}
 		
@@ -201,6 +240,10 @@ sampleButtons = function()
 			image4.src = linkPrefix + "images/dark.png";  //reflection
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
+			image7.src = linkPrefix + "images/day_1.PNG"; //da
+			image8.src = linkPrefix + "images/day_2.PNG"; //da
+			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image10.src = linkPrefix + "images/day_4.PNG"; //da
 		
 		}
 
@@ -216,6 +259,11 @@ sampleButtons = function()
 			image4.src = linkPrefix + "images/dark.png";  //reflection
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
+			image7.src = linkPrefix + "images/new/day_1.png"; //da
+			image8.src = linkPrefix + "images/new/day_2.png"; //da
+			image9.src = linkPrefix + "images/new/day_3.png"; //da
+			image10.src = linkPrefix + "images/new/day_4.png"; //da
+
 		
 		}
 
@@ -231,6 +279,10 @@ sampleButtons = function()
 			image4.src = linkPrefix + "images/dark.png";  //reflection
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
+			image7.src = linkPrefix + "images/new/day_1.png"; //da
+			image8.src = linkPrefix + "images/new/day_2.png"; //da
+			image9.src = linkPrefix + "images/new/day_3.png"; //da
+			image10.src = linkPrefix + "images/new/day_4.png"; //da
 		
 		}
 
@@ -241,9 +293,10 @@ sampleButtons = function()
 		$("#container4image").append(image4);
 		$("#container5image").append(image5);
 		$("#container6image").append(image6);
-		//$("#container7image").empty().append(image7);
-		//$("#container8image").empty().append(image8);
-		//$("#container9image").empty().append(image9);
+		$("#container7image").append(image7);
+		$("#container8image").append(image8);
+		$("#container9image").append(image9);
+		$("#container10image").append(image10);
 
     	//set thumb image size
 		setThumbImgSize(image3);
@@ -257,6 +310,10 @@ sampleButtons = function()
     		refractImage.src = image5.src;
     		reflectImage.src = image4.src;
     		alphaImage.src = image6.src;
+			day_1_image.src = image7.src;
+			day_2_image.src = image8.src;
+			day_3_image.src = image9.src;
+			day_4_image.src = image10.src;
 		//heightFieldImage.src = linkPrefix + image7.src;
 		//envLightImage.src = linkPrefix + image8.src;
 		//maskImage.src = linkPrefix + image9.src;
@@ -280,7 +337,11 @@ UPLOADinit = function()
 	image3 = new Image();
 	image4 = new Image();
 	image5 = new Image();	
-	image6 = new Image();	
+	image6 = new Image();
+	image7 = new Image();
+	image8 = new Image();
+	image9 = new Image();
+	image10 = new Image();	
 	
 	initParameters();
 
@@ -430,6 +491,10 @@ UPLOADinit = function()
 	image4.src = "images/dark.png";  //reflection
 	image5.src = "images/dark.jpg";  //refraction	
 	image6.src = "images/white.png"; //alpha
+	image7.src = "images/new/day_1.png"; //alpha
+	image8.src = "images/new/day_2.png"; //alpha
+	image9.src = "images/new/day_3.png"; //alpha
+	image10.src = "images/new/day_4.png"; //alpha
 
 	//underWater
 	// alphaR = 0;
@@ -604,6 +669,10 @@ UPLOADinit = function()
 	initDefaultThumbImgSize(image4);
 	initDefaultThumbImgSize(image5);
 	initDefaultThumbImgSize(image6);
+	initDefaultThumbImgSize(image7);
+	initDefaultThumbImgSize(image8);
+	initDefaultThumbImgSize(image9);
+	initDefaultThumbImgSize(image10);
 
 	//canvas size based on Normal map
 	
@@ -613,6 +682,11 @@ UPLOADinit = function()
 	$("#container4image").append(image4);
 	$("#container5image").append(image5);
 	$("#container6image").append(image6);
+	$("#container7image").append(image7);
+	$("#container8image").append(image8);
+	$("#container9image").append(image9);
+	$("#container10image").append(image10);
+	
 	//$("#container7image").append(image3);
 	//updateCanvasSizeandStyle(image3)	
 	initDefaultCanvasSize(image3);
@@ -842,16 +916,51 @@ function fileUploaded(event, elemName)
 	}
 	else if(elemName === "container7")
 	{
-		//image3 = new Image();
-		//image3.src 	= event.target.result;
-		//image = image3;
+		image7 = new Image();
+		image7.src 	= event.target.result;
+		image = image7;
 
 		//set thumb image size
-		//setThumbImgSize(image3);
-		//updateCanvasSizeandStyle(image3);
+		setThumbImgSize(image7);
 
 		// Update WebGL texture.
-		SizeImage.src = image3.src;
+		day_1_image.src = image7.src;
+	}
+	else if(elemName === "container8")
+	{
+		image8 = new Image();
+		image8.src 	= event.target.result;
+		image = image8;
+
+		//set thumb image size
+		setThumbImgSize(image8);
+
+		// Update WebGL texture.
+		day_2_image.src = image8.src;
+	}
+	else if(elemName === "container9")
+	{
+		image9 = new Image();
+		image9.src 	= event.target.result;
+		image = image9;
+
+		//set thumb image size
+		setThumbImgSize(image9);
+
+		// Update WebGL texture.
+		day_3_image.src = image9.src;
+	}
+	else if(elemName === "container10")
+	{
+		image10 = new Image();
+		image10.src 	= event.target.result;
+		image = image10;
+
+		//set thumb image size
+		setThumbImgSize(image10);
+
+		// Update WebGL texture.
+		day_4_image.src = image10.src;
 	}
 	
 	// create the image object

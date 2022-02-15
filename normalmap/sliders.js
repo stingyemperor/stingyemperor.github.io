@@ -38,8 +38,8 @@ $(document).ready(function () {
 
     $("#day_night_Control_slider").slider({ min: 0, max: 1, value: [day, night], step: 0.01, focus: true });
     $("#day_night_Control_slider").on("slide", function(slideEvt) {
-    	Day = slideEvt.value[0];
-    	Night = slideEvt.value[1];
+    	day = slideEvt.value[0];
+    	night = slideEvt.value[1];
     });
 
 

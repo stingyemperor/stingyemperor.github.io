@@ -151,6 +151,11 @@ var color1Loc;
 var darkTexture, darkImage;
 var lightTexture, lightImage;
 var normalTexture, normalImage;
+var day_1_Texture, day_1_image;
+var day_2_Texture, day_2_image;
+var day_3_Texture, day_3_image;
+var day_4_Texture, day_4_image;
+
 var reflectTexture, reflectImage;
 var refractTexture, refractImage;
 var alphaTexture, alphaImage;
@@ -247,6 +252,22 @@ window.onload = function init()
     darkImage.src = image1.src;
     requestCORSIfNotSameOrigin(darkImage, darkImage.src);
     console.log(this.darkImage.src);
+
+    day_1_image.src = image7.src;
+    requestCORSIfNotSameOrigin(day_1_image, day_1_image.src);
+    console.log(normalImage.src);
+
+    day_2_image.src = image8.src;
+    requestCORSIfNotSameOrigin(day_2_image, day_2_image.src);
+    console.log(normalImage.src);
+
+    day_3_image.src = image9.src;
+    requestCORSIfNotSameOrigin(day_3_image, day_3_image.src);
+    console.log(normalImage.src);
+
+    day_4_image.src = image10.src;
+    requestCORSIfNotSameOrigin(day_4_image, day_4_image.src);
+    console.log(normalImage.src);
   
   
     refractImage.src = image5.src;
@@ -268,6 +289,11 @@ window.onload = function init()
     lightImage.onload = function() { handleTextureLoaded(lightImage, lightTexture); }
 
     darkImage.onload = function() { handleTextureLoaded(darkImage, darkTexture); }
+
+    day_1_image.onload = function() { handleTextureLoaded(day_1_image, day_1_Texture); }
+    day_1_image.onload = function() { handleTextureLoaded(day_2_image, day_2_Texture); }
+    day_1_image.onload = function() { handleTextureLoaded(day_3_image, day_3_Texture); }
+    day_1_image.onload = function() { handleTextureLoaded(day_4_image, day_4_Texture); }
 
     refractImage.onload = function() { handleTextureLoaded(refractImage, refractTexture); }
 
@@ -299,6 +325,25 @@ window.onload = function init()
     gl.activeTexture(gl.TEXTURE5); 
     gl.bindTexture(gl.TEXTURE_2D, alphaTexture);
     gl.uniform1i(gl.getUniformLocation(program, "uSamplerAlpha"), 5);
+
+    gl.activeTexture(gl.TEXTURE6); 
+    gl.bindTexture(gl.TEXTURE_2D, day_1_Texture);
+    gl.uniform1i(gl.getUniformLocation(program, "uSamplerDay1"), 6);
+
+    gl.activeTexture(gl.TEXTURE7); 
+    gl.bindTexture(gl.TEXTURE_2D, day_2_Texture);
+    gl.uniform1i(gl.getUniformLocation(program, "uSamplerDay2"), 7);
+
+    gl.activeTexture(gl.TEXTURE8); 
+    gl.bindTexture(gl.TEXTURE_2D, day_3_Texture);
+    gl.uniform1i(gl.getUniformLocation(program, "uSamplerDay3"), 8);
+
+    gl.activeTexture(gl.TEXTURE9); 
+    gl.bindTexture(gl.TEXTURE_2D, day_4_Texture);
+    gl.uniform1i(gl.getUniformLocation(program, "uSamplerDay4"), 9);
+
+
+
 
 
 
@@ -362,7 +407,17 @@ function initTextures() {
     alphaTexture = gl.createTexture();
     alphaImage = new Image();
     
-    
+    day_1_Texture = gl.createTexture();
+    day_1_image = new Image();
+
+    day_2_Texture = gl.createTexture();
+    day_2_image = new Image();
+
+    day_3_Texture = gl.createTexture();
+    day_3_image = new Image();
+
+    day_4_Texture = gl.createTexture();
+    day_4_image = new Image();
 
 }
 

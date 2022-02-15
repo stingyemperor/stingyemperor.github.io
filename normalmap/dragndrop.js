@@ -120,10 +120,10 @@ sampleButtons = function()
 			image4.src = "images/reflmap.png";  //reflection
 			image5.src = "images/himlaya.png";//refraction
 			image6.src = "images/Fence/alpha.png";
-			image7.src = linkPrefix + "images/day_1.PNG"; //da
-			image8.src = linkPrefix + "images/day_2.PNG"; //da
-			image9.src = linkPrefix + "images/day_3.PNG"; //da
-			image10.src = linkPrefix + "images/day_4.PNG"; //da
+			image7.src = linkPrefix + "images/day_1.png"; //da
+			image8.src = linkPrefix + "images/day_2.png"; //da
+			image9.src = linkPrefix + "images/day_3.png"; //da
+			image10.src = linkPrefix + "images/day_4.png"; //da
 
 		}
 		
@@ -139,10 +139,10 @@ sampleButtons = function()
 			image4.src = linkPrefix + "images/dark.png";  //reflection
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
-			image7.src = linkPrefix + "images/day_1.PNG"; //da
-			image8.src = linkPrefix + "images/day_2.PNG"; //da
-			image9.src = linkPrefix + "images/day_3.PNG"; //da
-			image10.src = linkPrefix + "images/day_4.PNG"; //da
+			image7.src = linkPrefix + "images/1/day_1.png"; //da
+			image8.src = linkPrefix + "images/1.day_2.png"; //da
+			image9.src = linkPrefix + "images/1/day_3.png"; //da
+			image10.src = linkPrefix + "images/1/day_4.png"; //da
 			
 			
 			
@@ -491,10 +491,10 @@ UPLOADinit = function()
 	image4.src = "images/dark.png";  //reflection
 	image5.src = "images/dark.jpg";  //refraction	
 	image6.src = "images/white.png"; //alpha
-	image7.src = "images/new/day_1.png"; //alpha
+	image7.src = "images/new/day_1.PNG"; //alpha
 	image8.src = "images/new/day_2.png"; //alpha
 	image9.src = "images/new/day_3.png"; //alpha
-	image10.src = "images/new/day_4.png"; //alpha
+	image10.src = "images/new/day_4.PNG"; //alpha
 
 	//underWater
 	// alphaR = 0;
@@ -750,28 +750,28 @@ function addEventListeners()
 	container6.addEventListener('drop', dropFile, false);
 	
 	var container7 = $container7[0];
-	container6.addEventListener('dragover', cancel, false);
-	container6.addEventListener('dragenter', cancel, false);
-	container6.addEventListener('dragexit', cancel, false);
-	container6.addEventListener('drop', dropFile, false);
+	container7.addEventListener('dragover', cancel, false);
+	container7.addEventListener('dragenter', cancel, false);
+	container7.addEventListener('dragexit', cancel, false);
+	container7.addEventListener('drop', dropFile, false);
 	
-	var container8 = $container8[0];
-	container6.addEventListener('dragover', cancel, false);
-	container6.addEventListener('dragenter', cancel, false);
-	container6.addEventListener('dragexit', cancel, false);
-	container6.addEventListener('drop', dropFile, false);
+	// var container8 = $container8[0];
+	// container8.addEventListener('dragover', cancel, false);
+	// container8.addEventListener('dragenter', cancel, false);
+	// container8.addEventListener('dragexit', cancel, false);
+	// container8.addEventListener('drop', dropFile, false);
 
-	var container9 = $container9[0];
-	container6.addEventListener('dragover', cancel, false);
-	container6.addEventListener('dragenter', cancel, false);
-	container6.addEventListener('dragexit', cancel, false);
-	container6.addEventListener('drop', dropFile, false);
+	// var container9 = $container9[0];
+	// container9.addEventListener('dragover', cancel, false);
+	// container9.addEventListener('dragenter', cancel, false);
+	// container9.addEventListener('dragexit', cancel, false);
+	// container9.addEventListener('drop', dropFile, false);
 
-	var container10 = $container10[0];
-	container6.addEventListener('dragover', cancel, false);
-	container6.addEventListener('dragenter', cancel, false);
-	container6.addEventListener('dragexit', cancel, false);
-	container6.addEventListener('drop', dropFile, false);
+	// var container10 = $container10[0];
+	// container10.addEventListener('dragover', cancel, false);
+	// container10.addEventListener('dragenter', cancel, false);
+	// container10.addEventListener('dragexit', cancel, false);
+	// container10.addEventListener('drop', dropFile, false);
 
 }
 

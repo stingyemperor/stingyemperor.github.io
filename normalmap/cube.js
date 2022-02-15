@@ -291,9 +291,9 @@ window.onload = function init()
     darkImage.onload = function() { handleTextureLoaded(darkImage, darkTexture); }
 
     day_1_image.onload = function() { handleTextureLoaded(day_1_image, day_1_Texture); }
-    day_1_image.onload = function() { handleTextureLoaded(day_2_image, day_2_Texture); }
-    day_1_image.onload = function() { handleTextureLoaded(day_3_image, day_3_Texture); }
-    day_1_image.onload = function() { handleTextureLoaded(day_4_image, day_4_Texture); }
+    day_2_image.onload = function() { handleTextureLoaded(day_2_image, day_2_Texture); }
+    day_3_image.onload = function() { handleTextureLoaded(day_3_image, day_3_Texture); }
+    day_4_image.onload = function() { handleTextureLoaded(day_4_image, day_4_Texture); }
 
     refractImage.onload = function() { handleTextureLoaded(refractImage, refractTexture); }
 

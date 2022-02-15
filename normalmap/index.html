@@ -171,9 +171,10 @@
 
             float d =night-day;
 
-            vec4 colorFinal = c0 * (1.0 - T) + c1 * T;
+           // vec4 colorFinal = c0 * (1.0 - T) + c1 * T;
 
-            //vec4 colorFinal = c00*(1.0-d)*(1.0-T_d) + c01*(1.0-d)*T_d + c10*d*(1.0-T_d) + c11*d*T_d ; 
+            //vec4 colorFinal = c11*(1.0-d)*(1.0-T_d) + c01*(1.0-d)*T_d + c10*d*(1.0-T_d) + c00*d*T_d ; 
+            vec4 colorFinal = c11*(1.0-d)*(1.0-T) + c10*(1.0-d)*T + c01*d*(1.0-T) + c01*d*T ;
             
             if (lightsOnly )
             {

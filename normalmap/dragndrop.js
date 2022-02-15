@@ -476,7 +476,16 @@ UPLOADinit = function()
 	//FGdis = 0.81;
 	mouseXY[0] = [0.34, -0.0746];
 
-
+	// image1.src = linkPrefix + "images/1/dark1.jpeg";//dark
+	// image2.src = linkPrefix + "images/1/light1.jpeg";//bright
+	// image3.src = linkPrefix + "images/1/normal1.jpg"; //shape map
+	// image4.src = linkPrefix + "images/dark.png";  //reflection
+	// image5.src = linkPrefix + "images/dark.jpg";  //refraction	
+	// image6.src = linkPrefix + "images/white.png"; //alpha
+	// image7.src = linkPrefix + "images/1/day_1.png"; //da
+	// image8.src = linkPrefix + "images/1.day_2.png"; //da
+	// image9.src = linkPrefix + "images/1/day_3.png"; //da
+	// image10.src = linkPrefix + "images/1/day_4.png"; //da
 	
 	// image1.src = "images/Escher/handWithSphere/dark0.png"; //dark
 	// image2.src = "images/Escher/handWithSphere/bright0.png"; //bright
@@ -485,16 +494,29 @@ UPLOADinit = function()
 	// image5.src = "images/Escher/handWithSphere/bg.png";//refraction
 	// image6.src = "images/Escher/handWithSphere/alpha1.png";
 
-	image1.src = "images/new/dark.PNG";//dark
-	image2.src = "images/new/light.PNG";//bright
-	image3.src = "images/new/normal.PNG"; //shape map
+	image1.src = "images/1/dark1.jpeg";//dark
+	image2.src = "images/1/light1.jpeg";//bright
+	image3.src = "images/1/normal1.jpg"; //shape map
 	image4.src = "images/dark.png";  //reflection
 	image5.src = "images/dark.jpg";  //refraction	
 	image6.src = "images/white.png"; //alpha
-	image7.src = "images/new/day_1.PNG"; //alpha
-	image8.src = "images/new/day_2.png"; //alpha
-	image9.src = "images/new/day_3.png"; //alpha
-	image10.src = "images/new/day_4.PNG"; //alpha
+	image7.src = "images/1/day_1.png"; //alpha
+	image8.src = "images/1/day_2.png"; //alpha
+	image9.src = "images/1/day_3.png"; //alpha
+	image10.src = "images/1/day_4.png"; //alpha
+
+	// image1.src = "images/new/dark.PNG";//dark
+	// image2.src = "images/new/light.PNG";//bright
+	// image3.src = "images/new/normal.PNG"; //shape map
+	// image4.src = "images/dark.png";  //reflection
+	// image5.src = "images/dark.jpg";  //refraction	
+	// image6.src = "images/white.png"; //alpha
+	// image7.src = "images/new/day_1.png"; //alpha
+	// image8.src = "images/new/day_2.png"; //alpha
+	// image9.src = "images/new/day_3.png"; //alpha
+	// image10.src = "images/new/day_4.png"; //alpha
+
+
 
 	//underWater
 	// alphaR = 0;

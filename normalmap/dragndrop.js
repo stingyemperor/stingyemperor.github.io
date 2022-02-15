@@ -754,6 +754,25 @@ function addEventListeners()
 	container6.addEventListener('dragenter', cancel, false);
 	container6.addEventListener('dragexit', cancel, false);
 	container6.addEventListener('drop', dropFile, false);
+	
+	var container8 = $container8[0];
+	container6.addEventListener('dragover', cancel, false);
+	container6.addEventListener('dragenter', cancel, false);
+	container6.addEventListener('dragexit', cancel, false);
+	container6.addEventListener('drop', dropFile, false);
+
+	var container9 = $container9[0];
+	container6.addEventListener('dragover', cancel, false);
+	container6.addEventListener('dragenter', cancel, false);
+	container6.addEventListener('dragexit', cancel, false);
+	container6.addEventListener('drop', dropFile, false);
+
+	var container10 = $container10[0];
+	container6.addEventListener('dragover', cancel, false);
+	container6.addEventListener('dragenter', cancel, false);
+	container6.addEventListener('dragexit', cancel, false);
+	container6.addEventListener('drop', dropFile, false);
+
 }
 
 
@@ -953,7 +972,7 @@ function fileUploaded(event, elemName)
 	else if(elemName === "container10")
 	{
 		image10 = new Image();
-		image10.src 	= event.target.result;
+		image10.src= event.target.result;
 		image = image10;
 
 		//set thumb image size

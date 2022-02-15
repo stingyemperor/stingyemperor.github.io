@@ -69,7 +69,7 @@ function initParameters(){
     //style section parameters
     styleBright = 0;
     styleDark = 1;
-    day=0;
+    day=0; 
     night=1;
 
     //highlight parameters

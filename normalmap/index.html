@@ -131,6 +131,7 @@
             
             
             vec4 color = vec4(0,0,0,1);
+            vec4 color_d = vec4(0,0,0,1);
             float lightWeight = 0.0;
 
             for (int i = 0; i < max_lights; i++)
@@ -141,12 +142,15 @@
                     //float cosTheta = max( dot(n, vLight), 0.0);
                     float cosTheta = ( dot(n, vLight) + 1.0 )/2.0;
                     float t = (cosTheta - styleDark) / (styleBright - styleDark);
+                    float t_d = (cosTheta - day) / (day - night);
                     if (t>1.0) t=1.0; if (t<0.0) t=0.0;
+                    if (t_d>1.0) t_d=1.0; if (t_d<0.0) t_d=0.0;
                     if ( showDiffuse[i] )
                     {
                         float dis = length( pLight[i] - currentP );
                         
-                        color += (1.0 - t) * vec4(lightColor[i], 1.0) * lightIntensity[i];// / ( 1.0 + pointLightDecay[i] * dis *4.0);
+                        color += (1.0 - t) * vec4(lightColor[i], 1.0) * lightIntensity[i];
+                        color_d += (1.0 - t_d) * vec4(lightColor[i], 1.0) * lightIntensity[i];
                         lightWeight+=lightIntensity[i] ;
                     };
 
@@ -156,7 +160,7 @@
             }
             
             vec4 T = color;//lightWeight;
-            
+            vec4 T_d = color_d;
             vec4 c0 = texture2D(uSamplerColor0, vec2(f_texcoord.s, f_texcoord.t) );//dark
             vec4 c1 = texture2D(uSamplerColor1, vec2(f_texcoord.s, f_texcoord.t) );//bright
 
@@ -167,9 +171,9 @@
 
             float d =night-day;
 
-            //vec4 colorFinal = c0 * (1.0 - T) + c1 * T;
+            vec4 colorFinal = c0 * (1.0 - T) + c1 * T;
 
-            vec4 colorFinal = c11*(1.0-d)*(1.0-T) + c10*(1.0-d)*T + c01*d*(1.0-T) + c00*d*T ; 
+            //vec4 colorFinal = c00*(1.0-d)*(1.0-T_d) + c01*(1.0-d)*T_d + c10*d*(1.0-T_d) + c11*d*T_d ; 
             
             if (lightsOnly )
             {

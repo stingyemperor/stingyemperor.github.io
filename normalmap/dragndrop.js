@@ -286,6 +286,46 @@ sampleButtons = function()
 		
 		}
 
+		if($(this).text() ==="Eye")
+		{
+			initParameters();
+			
+			//new
+			alphaR = 0.92;
+			reflMap = 2;
+			image1.src = linkPrefix + "images/Eye/eye_dark.png";//dark
+			image2.src = linkPrefix + "images/Eye/eye_bright.png";//bright
+			image3.src = linkPrefix + "images/Eye/eye_shape.png"; //shape map
+			image4.src = linkPrefix + "images/Eye/1eye_foreground.png";  //reflection
+			image5.src = linkPrefix + "images/Eye/1eye_foreground.png";  //refraction	
+			image6.src = linkPrefix + "images//Eye/eye_alpha.jpg"; //alpha
+			image7.src = linkPrefix + "images/new/day_1.png"; //da
+			image8.src = linkPrefix + "images/new/day_2.png"; //da
+			image9.src = linkPrefix + "images/new/day_3.png"; //da
+			image10.src = linkPrefix + "images/new/day_4.png"; //da
+		
+		}
+
+
+		if($(this).text() ==="Campbell")
+		{
+			initParameters();
+			
+			//new
+			alphaR = 0.85;
+			reflMap = 2;
+			image1.src = linkPrefix + "images/Campbell/DI0a.png";//dark
+			image2.src = linkPrefix + "images/Campbell/DI1.png";//bright
+			image3.src = linkPrefix + "images/Campbell/SManb.png"; //shape map
+			image4.src = linkPrefix + "images/Campbell/fore.jpg";  //reflection
+			image5.src = linkPrefix + "images/Campbell/back-1.png";  //refraction	
+			image6.src = linkPrefix + "images/Campbell/alpha-1.png"; //alpha
+			image7.src = linkPrefix + "images/new/day_1.png"; //da
+			image8.src = linkPrefix + "images/new/day_2.png"; //da
+			image9.src = linkPrefix + "images/new/day_3.png"; //da
+			image10.src = linkPrefix + "images/new/day_4.png"; //da
+		
+		}
 		
 		$("#container1image").append(image1);
 		$("#container2image").append(image2);

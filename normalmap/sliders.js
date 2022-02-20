@@ -240,6 +240,14 @@ function setupLightFunctions(i)
     pointLGTdecay_slider.attr("data-slider-min", 0).attr("data-slider-max", 1).attr("data-slider-step", 0.01).attr("data-slider-value", pointLightDecay[i]).attr("data-slider-tooltip","hide").slider({});
     bindSliderValParamIndex (pointLGTdecay_slider, pointLGTdecay_val, "pointLightDecay", i);
 
+    //Specular Power
+    var sliderName_specPower = "#lightPanel" + i + " #specPower_slider";
+    var textarea_specPower = "#lightPanel" + i + " #specPower_val";
+    var specPower_slider = $(sliderName_specPower);
+    var specPower_val = $(textarea_specPower);
+    specPower_slider.attr("data-slider-min", 0).attr("data-slider-max", 1000).attr("data-slider-step", 1.0).attr("data-slider-value", specPower[i]).attr("data-slider-tooltip","hide").slider({});
+    bindSliderValParamIndex (specPower_slider, specPower_val, "specPower", i);
+
 
     ////init colorPicker & add events
     var colorPickerName = "#lightPanel" + i + " .colorPicker";

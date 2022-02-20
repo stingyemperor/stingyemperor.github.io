@@ -92,6 +92,7 @@
         uniform vec3 lightColor[max_lights];
         uniform float lightIntensity[max_lights];
         uniform float pointLightDecay[max_lights];
+        uniform float specPower[max_lights];
         
         uniform bool showDiffuse[max_lights];
         uniform bool showSpec[max_lights];
@@ -171,10 +172,10 @@
 
             float d =night-day;
 
-           // vec4 colorFinal = c0 * (1.0 - T) + c1 * T;
+           vec4 colorFinal = c0 * (1.0 - T) + c1 * T;
 
-            vec4 colorFinal = c11*(1.0-d)*(1.0-T_d) + c10*(1.0-d)*T_d + c01*d*(1.0-T_d) + c00*d*T_d ; 
-            //vec4 colorFinal = c11*(1.0-d)*(1.0-T) + c10*(1.0-d)*T + c01*d*(1.0-T) + c01*d*T ;
+            //vec4 colorFinal = c11*(1.0-d)*(1.0-T_d) + c10*(1.0-d)*T_d + c01*d*(1.0-T_d) + c00*d*T_d ; 
+                //vec4 colorFinal = c11*(1.0-d)*(1.0-T) + c10*(1.0-d)*T + c01*d*(1.0-T) + c01*d*T ;
             
             if (lightsOnly )
             {
@@ -208,7 +209,7 @@
                     vec3 RVector = - vLight + 2.0 * dot(n, vLight) * n ;
                     float temp = dot(RVector, viewVector);
                     if ( temp < 0.0 ) temp = 0.0;
-                    float spec = pow(temp, 200.0);
+                    float spec = pow(temp, specPower[i]);
                     finalSpec += specColor * spec;
                     }
                 }else{
@@ -953,6 +954,15 @@
                     </div>
                     <div class="slider_box">
                         <input id="pointLGTdecay_slider" data-slider-id='customSlider' type="text" />
+                    </div>
+                </div>
+                <div class="slider_container">
+                    <span class="h6 inlineBlock"> Specular Power </span>
+                    <div class="pull-right">
+                        <input type="text" class="form-control mytextbox text-center" id="specPower_val">
+                    </div>
+                    <div class="slider_box">
+                        <input id="specPower_slider" data-slider-id='customSlider' type="text" />
                     </div>
                 </div>
 

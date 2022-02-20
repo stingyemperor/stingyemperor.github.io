@@ -22,6 +22,9 @@ pointLightDis[0] = 0.5;
 var pointLightDecay = [];
 pointLightDecay[0] = 0.1;
 
+var specPower =[];
+specPower[0] = 100;
+
 var showDiffuse = [];
 showDiffuse[0] = 1;
 
@@ -63,6 +66,7 @@ function initParameters(){
     lightIntensity[0] = 1.0;
     pointLightDis[0] = 0.5;
     pointLightDecay[0] = 0.0;
+    specPower[0]=100;
     showDiffuse[0] = 1;
     showSpec[0] = 1; 
 
@@ -118,6 +122,8 @@ var lightColorLoc;
 var lightIntensityLoc;
 var pointLightDisLoc;
 var pointLightDecayLoc;
+
+var specPowerLoc;
 
 var showDiffuseLoc;
 var showSpecLoc;
@@ -360,6 +366,7 @@ window.onload = function init()
     showSpecLoc = gl.getUniformLocation( program, "showSpec");
     pointLightDisLoc = gl.getUniformLocation( program, "pointLightDis");
     pointLightDecayLoc = gl.getUniformLocation( program, "pointLightDecay");
+    specPowerLoc = gl.getUniformLocation( program, "specPower");
             
 
     styleBrightLoc = gl.getUniformLocation( program, "styleBright");
@@ -471,6 +478,7 @@ function render() {
     gl.uniform1iv(showSpecLoc, showSpec);
     gl.uniform1fv(pointLightDisLoc, pointLightDis);
     gl.uniform1fv(pointLightDecayLoc, pointLightDecay);
+    gl.uniform1fv(specPowerLoc, specPower);
     
     gl.uniform1f(styleBrightLoc, styleBright);
     gl.uniform1f(styleDarkLoc, styleDark);

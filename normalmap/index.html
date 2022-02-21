@@ -109,6 +109,7 @@
         uniform float FGshiftY;
         uniform float FGscaleX;
         uniform float FGscaleY;
+        uniform float refl_intensity;
 
         uniform float fresnelIntensity;
         uniform float fresnelB;
@@ -224,7 +225,7 @@
         vec3 reflect1(vec3 n)
         {
 
-            float reflectIntensity = 1.0;
+            float reflectIntensity = refl_intensity;
             vec3 reflect = - 1.0 * vec3(0.0, 0.0, 1.0) + 2.0 * dot(n, vec3(0.0, 0.0, 1.0)) * n;
             vec2 reflCoord = f_texcoord + (reflect.xy / reflect.z) * FGdis + vec2( -mouseXYcopy.x * 0.5, mouseXYcopy.y * 0.5) ;//+ vLight0.xy ;
             vec2 v = (reflCoord - vec2(0.5, 0.5)) / 0.5;
@@ -260,7 +261,7 @@
         vec3 reflect2(vec3 n)
         {
             
-            float reflectIntensity = 1.0;
+            float reflectIntensity = refl_intensity;
             vec2 reflCoord = f_texcoord + n.xy/n.z * FGdis + vec2( -mouseXYcopy.x * 0.5, mouseXYcopy.y * 0.5);
             vec2 v = (reflCoord - vec2(0.5, 0.5)) / 0.5;
                 reflCoord.x = v.x * ( 1.0 - FGscaleX ) - FGshiftX +0.5;
@@ -887,6 +888,16 @@
                                 </div>
                                 <div class="slider_box">
                                     <input id="refl_FGdis_slider" data-slider-id='customSlider' type="text" />
+                                </div>
+                            </div>
+
+                            <div class="slider_container">
+                                <span class="h6 inlineBlock"> Reflection Intensity </span>
+                                <div class="pull-right">
+                                    <input type="text" class="form-control mytextbox text-center" id="refl_intensity_val">
+                                </div>
+                                <div class="slider_box">
+                                    <input id="refl_intensity_slider" data-slider-id='customSlider' type="text" />
                                 </div>
                             </div>
 

@@ -167,6 +167,13 @@ $(document).ready(function () {
     bindSliderValParam (refl_FGscaleY_slider, refl_FGscaleY_val, "FGscaleY");
 
 
+    //Reflection Intensity
+    var refl_intensity_slider = $("#refl_intensity_slider");
+    var refl_intensity_val = $("#refl_intensity_val");
+    refl_intensity_slider.attr("data-slider-min", 0).attr("data-slider-max", 5).attr("data-slider-step", 0.01).attr("data-slider-value", refl_intensity).attr("data-slider-tooltip","hide").slider({});
+    bindSliderValParam (refl_intensity_slider, refl_intensity_val, "refl_intensity");
+
+
     $("#bluriness_slider").slider({min: 0, max: 1, value: 1, step: 0.01, focus: true});
     
     

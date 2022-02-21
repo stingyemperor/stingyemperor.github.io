@@ -339,7 +339,7 @@ function translate( x, y, z )
 
 //----------------------------------------------------------------------------
 
-function rotate( angle, axis )
+function rotate1( angle, axis )
 {
     if ( !Array.isArray(axis) ) {
         axis = [ arguments[1], arguments[2], arguments[3] ];
@@ -363,6 +363,19 @@ function rotate( angle, axis )
     );
 
     return result;
+}
+
+
+
+function cosine(angle){
+    var c =Math.cos(radians(angle));
+    return c;
+}
+
+function sine(angle){
+    var c =Math.sin(radians(angle));
+
+    return c;
 }
 
 //----------------------------------------------------------------------------

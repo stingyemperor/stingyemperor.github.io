@@ -55,6 +55,7 @@ var FGshiftY;
 var FGscaleX;
 var FGscaleY;
 var refl_intensity;
+var rotate;
 
 var fresnelIntensity;
 var fresnelB; //cos = 0.95
@@ -98,6 +99,7 @@ function initParameters(){
     FGscaleX = 0.5;
     FGscaleY = 0.5;
     refl_intensity=1.0;
+    rotate=0;
     
     //Fresnel parameters
     fresnelIntensity = 0;
@@ -136,7 +138,7 @@ var alphaRLoc, alphaGLoc, alphaBLoc;
 var logIORLoc, BGdisLoc;
 var FGdisLoc;
 var reflMapLoc;
-var FGshiftXLoc, FGshiftYLoc, FGscaleXLoc, FGscaleXLoc,refl_intensityLoc;
+var FGshiftXLoc, FGshiftYLoc, FGscaleXLoc, FGscaleXLoc,refl_intensityLoc,rotate_loc;
 
 var fresnelIntensityLoc;
 var fresnelBLoc, fresnelCLoc;
@@ -387,6 +389,7 @@ window.onload = function init()
     FGscaleXLoc = gl.getUniformLocation( program, "FGscaleX");
     FGscaleYLoc = gl.getUniformLocation( program, "FGscaleY");
     refl_intensityLoc = gl.getUniformLocation( program, "refl_intensity");
+    rotateLoc = gl.getUniformLocation( program, "rotate");
 
     fresnelIntensityLoc = gl.getUniformLocation ( program, "fresnelIntensity");
     fresnelBLoc = gl.getUniformLocation( program, "fresnelB");
@@ -500,6 +503,7 @@ function render() {
     gl.uniform1f(FGscaleXLoc, FGscaleX);
     gl.uniform1f(FGscaleYLoc, FGscaleY);
     gl.uniform1f(refl_intensityLoc,refl_intensity);
+    gl.uniform1f(rotateLoc,rotate);
 
     gl.uniform1f(fresnelIntensityLoc, fresnelIntensity);
     gl.uniform1f(fresnelBLoc, fresnelB);

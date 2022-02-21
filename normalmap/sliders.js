@@ -173,6 +173,12 @@ $(document).ready(function () {
     refl_intensity_slider.attr("data-slider-min", 0).attr("data-slider-max", 5).attr("data-slider-step", 0.01).attr("data-slider-value", refl_intensity).attr("data-slider-tooltip","hide").slider({});
     bindSliderValParam (refl_intensity_slider, refl_intensity_val, "refl_intensity");
 
+    //Rotation
+    var rotate_slider = $("#rotate_slider");
+    var rotate_val = $("#rotate_val");
+    rotate_slider.attr("data-slider-min", 0).attr("data-slider-max", 360).attr("data-slider-step", 1).attr("data-slider-value", rotate).attr("data-slider-tooltip","hide").slider({});
+    bindSliderValParam (rotate_slider, rotate_val, "rotate");
+
 
     $("#bluriness_slider").slider({min: 0, max: 1, value: 1, step: 0.01, focus: true});
     

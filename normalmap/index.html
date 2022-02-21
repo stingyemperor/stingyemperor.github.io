@@ -110,6 +110,7 @@
         uniform float FGscaleX;
         uniform float FGscaleY;
         uniform float refl_intensity;
+        uniform float rotate;
 
         uniform float fresnelIntensity;
         uniform float fresnelB;
@@ -124,6 +125,13 @@
             normalDisplace = 2.0*normalDisplace - 1.0;
             normalDisplace = normalize(normalDisplace);
             return vec4(normalize(fNormal + normalDisplace), normalMap.a);
+        }
+
+        vec2 rotate2(vec2 v, float a) {
+            float s = sin(radians(a));
+            float c = cos(radians(a));
+            mat2 m = mat2(c, -s, s, c);
+            return m * v;
         }
 
         vec4 diffuse(vec3 n)
@@ -231,6 +239,7 @@
             vec2 v = (reflCoord - vec2(0.5, 0.5)) / 0.5;
                 reflCoord.x = v.x * ( 1.0 - FGscaleX ) - FGshiftX + 0.5;
                 reflCoord.y = v.y * ( 1.0 - FGscaleY ) - FGshiftY + 0.5;
+                reflCoord = rotate2(reflCoord,rotate);
                 if (reflCoord.x > 1.0 || reflCoord.x < 0.0)
                 {
                     reflCoord.x = reflCoord.x - float(floor(reflCoord.x));
@@ -264,8 +273,11 @@
             float reflectIntensity = refl_intensity;
             vec2 reflCoord = f_texcoord + n.xy/n.z * FGdis + vec2( -mouseXYcopy.x * 0.5, mouseXYcopy.y * 0.5);
             vec2 v = (reflCoord - vec2(0.5, 0.5)) / 0.5;
-                reflCoord.x = v.x * ( 1.0 - FGscaleX ) - FGshiftX +0.5;
-                reflCoord.y = v.y * ( 1.0 - FGscaleY ) - FGshiftY + 0.5;
+            
+                reflCoord.x = (v.x * ( 1.0 - FGscaleX ) - FGshiftX +0.5);
+                reflCoord.y = (v.y * ( 1.0 - FGscaleY ) - FGshiftY + 0.5);
+                reflCoord = rotate2(reflCoord,rotate);
+                
                 if (reflCoord.x > 1.0 || reflCoord.x < 0.0)
                 {
                     reflCoord.x = reflCoord.x - float(floor(reflCoord.x));
@@ -898,6 +910,16 @@
                                 </div>
                                 <div class="slider_box">
                                     <input id="refl_intensity_slider" data-slider-id='customSlider' type="text" />
+                                </div>
+                            </div>
+
+                            <div class="slider_container">
+                                <span class="h6 inlineBlock"> Rotation Angle </span>
+                                <div class="pull-right">
+                                    <input type="text" class="form-control mytextbox text-center" id="rotate_val">
+                                </div>
+                                <div class="slider_box">
+                                    <input id="rotate_slider" data-slider-id='customSlider' type="text" />
                                 </div>
                             </div>
 

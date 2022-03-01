@@ -11,7 +11,9 @@ $(document).ready(function () {
 
     var checkFresnelElem = $('#checkFresnelSelect');
     initCheckbox(checkFresnel, checkFresnelElem);
-    
+
+    var realFrElem = $('#realFr');
+    initCheckbox(realF, realFrElem); 
 
     if (lightsPosition ==1)
     {

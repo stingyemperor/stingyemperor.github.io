@@ -116,6 +116,7 @@
         uniform float fresnelB;
         uniform float fresnelC;
         uniform bool checkFresnel;
+        uniform bool realF;
 
         vec4 normal()
         {
@@ -312,7 +313,7 @@
         {
             float refractIntensity = 1.0;
             float ior = pow(2.0, logIOR);
-            float cos1 = dot(n, vec3(0, 0, 1.0)); //vLight
+            float cos1 = dot(n, vec3(0, 0, 1.0)); //vLight  == C
             float cos2 = sqrt(1.0 + ior * ior * ( (cos1 * cos1) - 1.0 ));
             vec3 refract = -1.0 * ior * vec3(0, 0, 1.0) + (ior * cos1 - cos2) * n; // vec3(0,0,1) -> vLight
             vec2 refrCoord = f_texcoord + (refract.xy / refract.z ) * (2.0 * BGdis);
@@ -416,7 +417,16 @@
                 refl = reflect2(n) + specular; //hemisphere
                 if (checkFresnel){refl = reflect2(n);} 
             }
-            vec3 refr = refract(n);
+            
+            vec3 refr = refract2(n);
+
+            if(realF==true){
+                refr = refract2(n);
+
+            }else{
+                refr = refract(n);
+            }
+            
             
             vec3 fresnel = fresnelBlend(n, refl, refr);
             
@@ -794,6 +804,17 @@
                                                 </div>
                                             </label>
                                         </div>
+
+                                        <div class = "checkbox">
+                                            <label>
+                                                <span class="h6 inlineBlock" >Real Fresnel</span>
+                                                <div class = "checkbox_container pull-right">
+                                                    <input type="checkbox" id = "realFr">
+                                                    <div class = "pseudoCheckbox"></div>
+                                                </div>
+                                            </label>
+                                        </div>
+
                                         <div >
                                             <span class="h6 inlineBlock"> Fresnel Control </span>
                                             <div class="pull-right">

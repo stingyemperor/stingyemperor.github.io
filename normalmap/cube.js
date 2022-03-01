@@ -61,6 +61,7 @@ var fresnelIntensity;
 var fresnelB; //cos = 0.95
 var fresnelC; //cos = 0.7
 var checkFresnel;
+var realF;
 
 function initParameters(){
     lightColor =[1.0, 1.0, 1.0];
@@ -106,6 +107,7 @@ function initParameters(){
     fresnelB = 0.3; //cos = 0.95
     fresnelC = 0.6; //cos = 0.7
     checkFresnel = 0;
+    realF=0;
 
     // Height Light parameters
     //hLightDistance = 1.0;
@@ -143,6 +145,7 @@ var FGshiftXLoc, FGshiftYLoc, FGscaleXLoc, FGscaleXLoc,refl_intensityLoc,rotate_
 var fresnelIntensityLoc;
 var fresnelBLoc, fresnelCLoc;
 var checkFresnelLoc; 
+var realFLoc;
 
 
 /****************** For Basic shader ******************/
@@ -395,6 +398,7 @@ window.onload = function init()
     fresnelBLoc = gl.getUniformLocation( program, "fresnelB");
     fresnelCLoc = gl.getUniformLocation( program, "fresnelC");
     checkFresnelLoc = gl.getUniformLocation( program, "checkFresnel");
+    realFLoc = gl.getUniformLocation( program, "realF");
 
     render();
 };
@@ -458,6 +462,9 @@ function render() {
     var checkFresnelElem = $('#checkFresnelSelect:checked');
     checkFresnel = (checkFresnelElem.val())?1:0;
 
+    var realFrElem  = $('#realFr:checked');
+    realF = (realFrElem.val())?1:0; 
+
 
     for (var i = 0; i < lightNum ; i++)
     {
@@ -509,6 +516,7 @@ function render() {
     gl.uniform1f(fresnelBLoc, fresnelB);
     gl.uniform1f(fresnelCLoc, fresnelC);
     gl.uniform1i(checkFresnelLoc, checkFresnel);
+    gl.uniform1i(realFLoc,realF);
 
     gl.drawArrays( gl.TRIANGLES, 0, numVertices );
 

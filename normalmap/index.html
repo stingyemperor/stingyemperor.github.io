@@ -98,7 +98,7 @@
         uniform bool showSpec[max_lights];
         
         uniform float styleBright, styleDark;
-        uniform float day, night;
+        uniform float day;
         uniform float alphaR, alphaG, alphaB;
         uniform float logIOR, BGdis;
 
@@ -153,15 +153,17 @@
                     //float cosTheta = max( dot(n, vLight), 0.0);
                     float cosTheta = ( dot(n, vLight) + 1.0 )/2.0;
                     float t = (cosTheta - styleDark) / (styleBright - styleDark);
-                    float t_d = (cosTheta - day) / (day - night);
+                    
+              
+                    
                     if (t>1.0) t=1.0; if (t<0.0) t=0.0;
-                    if (t_d>1.0) t_d=1.0; if (t_d<0.0) t_d=0.0;
+            
                     if ( showDiffuse[i] )
                     {
                         float dis = length( pLight[i] - currentP );
                         
                         color += (1.0 - t) * vec4(lightColor[i], 1.0) * lightIntensity[i];
-                        color_d += (1.0 - t_d) * vec4(lightColor[i], 1.0) * lightIntensity[i];
+
                         lightWeight+=lightIntensity[i] ;
                     };
 
@@ -171,7 +173,7 @@
             }
             
             vec4 T = color;//lightWeight;
-            vec4 T_d = color_d;
+            
             vec4 c0 = texture2D(uSamplerColor0, vec2(f_texcoord.s, f_texcoord.t) );//dark
             vec4 c1 = texture2D(uSamplerColor1, vec2(f_texcoord.s, f_texcoord.t) );//bright
 
@@ -180,12 +182,12 @@
             vec4 c10 = texture2D(uSamplerDay3, vec2(f_texcoord.s, f_texcoord.t) );
             vec4 c11 = texture2D(uSamplerDay4, vec2(f_texcoord.s, f_texcoord.t) );
 
-            float d =night-day;
+            float d = day;
 
-           vec4 colorFinal = c0 * (1.0 - T) + c1 * T;
+           //vec4 colorFinal = c0 * (1.0 - T) + c1 * T;
 
             //vec4 colorFinal = c11*(1.0-d)*(1.0-T_d) + c10*(1.0-d)*T_d + c01*d*(1.0-T_d) + c00*d*T_d ; 
-                //vec4 colorFinal = c11*(1.0-d)*(1.0-T) + c10*(1.0-d)*T + c01*d*(1.0-T) + c01*d*T ;
+            vec4 colorFinal = c0*(1.0-d)*(1.0-T) + c01*(1.0-d)*T + c10*d*(1.0-T) + c1*d*T ;
             
             if (lightsOnly )
             {
@@ -589,6 +591,28 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class = "imgbox_container">
+                            <h6><span title="Insert or DragnDrop day image 1">Day image</span></h6>
+                            <div>
+                                <div id = "container8" class="imgThumb_container">
+                                    <div class="btn-file">
+                                        <input type="file" id = "inputFileToLoad8" >
+                                    </div>
+                                    <div id = "container8image" class="imgThumb"> </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class = "imgbox_container">
+                        <h6><span title="Insert or DragnDrop Day image 2">Night image</span></h6>
+                        <div>
+                            <div id = "container9" class="imgThumb_container">
+                                <div class="btn-file">
+                                    <input type="file" id = "inputFileToLoad9" >
+                                </div>
+                                <div id = "container9image" class="imgThumb"> </div>
+                            </div>
+                        </div>
+                    </div>
 			     <div class = "imgbox_container hidden">
                           	    <h6>Size Image</h6>
                         		<div>
@@ -611,15 +635,14 @@
                           	     </div>
 
                             </div>
-                            <div>
-                                <h6>Day/Night Cycle</h6>
+                            <div class="slider_container">
+                                <span class="h6 inlineBlock"> Day/Night Cycle</span>
+                                <div class="pull-right">
+                                    <input type="text" class="form-control mytextbox text-center" id="day_val">
+                                </div>
                                 <div class="slider_box">
-                                  <input id="day_night_Control_slider" data-slider-id='customSlider' type="text" class=" span2"   value="" />
-                              </div>
-                                 <div >
-                                    <div class = "h7 inlineBlock">Day</div>   
-                                  <div class = "h7 pull-right">Night</div>
-                                 </div>
+                                    <input id="day_slider" data-slider-id='customSlider' type="text" />
+                                </div>
                             </div>
                     	</div>	
                     </li>

@@ -38,12 +38,11 @@ $(document).ready(function () {
     	styleDark = slideEvt.value[1];
     });
 
-    $("#day_night_Control_slider").slider({ min: 0, max: 1, value: [day, night], step: 0.01, focus: true });
-    $("#day_night_Control_slider").on("slide", function(slideEvt) {
-    	day = slideEvt.value[0];
-    	night = slideEvt.value[1];
-    });
 
+    var day_slider = $("#day_slider");
+    var day_val = $("#day_val");
+    day_slider.attr("data-slider-min", 0).attr("data-slider-max", 1).attr("data-slider-step", 0.01).attr("data-slider-value", day).attr("data-slider-tooltip","hide").slider({});
+    bindSliderValParam (day_slider, day_val, "day");
 
     /**Alpha**/
 

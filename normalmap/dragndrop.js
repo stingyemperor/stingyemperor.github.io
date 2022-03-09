@@ -41,8 +41,8 @@ sampleButtons = function()
 			image5.src = "images/newBottle/bg.png";//refraction
 			image6.src = "images/newBottle/alpha.png";
 			image7.src = linkPrefix + "images/day_1.PNG"; //da
-			image8.src = linkPrefix + "images/day_2.PNG"; //da
-			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image8.src = "images/newBottle/diffuse.png"; //da
+			image9.src = "images/newBottle/diffuse.png"; //da
 			image10.src = linkPrefix + "images/day_4.PNG"; //da
 		}
 
@@ -66,8 +66,8 @@ sampleButtons = function()
 			image5.src = "images/himlaya.png";//refraction
 			image6.src = "images/Links/alpha.png";
 			image7.src = linkPrefix + "images/day_1.PNG"; //da
-			image8.src = linkPrefix + "images/day_2.PNG"; //da
-			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image8.src = "images/Links/dark.png"; //da
+			image9.src = "images/Links/dark.png"; //da
 			image10.src = linkPrefix + "images/day_4.PNG"; //da
 
 		}
@@ -96,8 +96,8 @@ sampleButtons = function()
 			image5.src = "images/Escher/handWithSphere/bg.png";//refraction
 			image6.src = "images/Escher/handWithSphere/alpha1.png";
 			image7.src = linkPrefix + "images/day_1.PNG"; //da
-			image8.src = linkPrefix + "images/day_2.PNG"; //da
-			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image8.src = linkPrefix + "images/Escher/handWithSphere/day1.png"; //da
+			image9.src = linkPrefix + "images/Escher/handWithSphere/day2.png"; //da
 			image10.src = linkPrefix + "images/day_4.PNG"; //da
 		}
 
@@ -121,8 +121,8 @@ sampleButtons = function()
 			image5.src = "images/himlaya.png";//refraction
 			image6.src = "images/Fence/alpha.png";
 			image7.src = linkPrefix + "images/day_1.png"; //da
-			image8.src = linkPrefix + "images/day_2.png"; //da
-			image9.src = linkPrefix + "images/day_3.png"; //da
+			image8.src = "images/Fence/dark.png"; //da
+			image9.src = "images/Fence/dark.png"	; //da
 			image10.src = linkPrefix + "images/day_4.png"; //da
 
 		}
@@ -140,8 +140,8 @@ sampleButtons = function()
 			image5.src = linkPrefix + "images/dark.png";  //refraction	
 			image6.src = linkPrefix + "images/1/alpha-1.png"; //alpha
 			image7.src = linkPrefix + "images/1/day_1.png"; //da
-			image8.src = linkPrefix + "images/1.day_2.png"; //da
-			image9.src = linkPrefix + "images/1/day_3.png"; //da
+			image8.src = linkPrefix + "images/1.day_1.png"; //da
+			image9.src = linkPrefix + "images/1/day_4.png"; //da
 			image10.src = linkPrefix + "images/1/day_4.png"; //da
 			
 			
@@ -162,8 +162,8 @@ sampleButtons = function()
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
 			image7.src = linkPrefix + "images/day_1.PNG"; //da
-			image8.src = linkPrefix + "images/day_2.PNG"; //da
-			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image8.src = linkPrefix + "images/2/dark2.jpg"; //da
+			image9.src = linkPrefix + "images/2/dark2.jpg"; //da
 			image10.src = linkPrefix + "images/day_4.PNG"; //da
 			
 		}
@@ -181,8 +181,8 @@ sampleButtons = function()
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
 			image7.src = linkPrefix + "images/day_1.PNG"; //da
-			image8.src = linkPrefix + "images/day_2.PNG"; //da
-			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image8.src = linkPrefix + "images/3/dark3.jpeg"; //da
+			image9.src = linkPrefix + "images/3/dark3.jpeg"; //da
 			image10.src = linkPrefix + "images/day_4.PNG"; //da
 		
 		}
@@ -200,8 +200,8 @@ sampleButtons = function()
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
 			image7.src = linkPrefix + "images/day_1.PNG"; //da
-			image8.src = linkPrefix + "images/day_2.PNG"; //da
-			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image8.src = linkPrefix + "images/1/dark1.jpeg"; //da
+			image9.src = linkPrefix + "images/1/dark1.jpeg"; //da
 			image10.src = linkPrefix + "images/day_4.PNG"; //da
 			
 			
@@ -222,8 +222,8 @@ sampleButtons = function()
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
 			image7.src = linkPrefix + "images/day_1.PNG"; //da
-			image8.src = linkPrefix + "images/day_2.PNG"; //da
-			image9.src = linkPrefix + "images/day_3.PNG"; //da
+			image8.src = linkPrefix + "images/2/dark2.jpg"; //da
+			image9.src = linkPrefix + "images/2/dark2.jpg"; //da
 			image10.src = linkPrefix + "images/day_4.PNG"; //da
 			
 		}
@@ -261,7 +261,7 @@ sampleButtons = function()
 			image6.src = linkPrefix + "images/white.png"; //alpha
 			image7.src = linkPrefix + "images/new/day_1.png"; //da
 			image8.src = linkPrefix + "images/new/day_2.png"; //da
-			image9.src = linkPrefix + "images/new/day_3.png"; //da
+			image9.src = linkPrefix + "images/new/day_4.png"; //da
 			image10.src = linkPrefix + "images/new/day_4.png"; //da
 
 		
@@ -279,10 +279,10 @@ sampleButtons = function()
 			image4.src = linkPrefix + "images/dark.png";  //reflection
 			image5.src = linkPrefix + "images/dark.jpg";  //refraction	
 			image6.src = linkPrefix + "images/white.png"; //alpha
-			image7.src = linkPrefix + "images/new/day_1.png"; //da
-			image8.src = linkPrefix + "images/new/day_2.png"; //da
-			image9.src = linkPrefix + "images/new/day_3.png"; //da
-			image10.src = linkPrefix + "images/new/day_4.png"; //da
+			image7.src = linkPrefix + "images/new/dark2.png"; //da
+			image8.src = linkPrefix + "images/new/dark2.png"; //da
+			image9.src = linkPrefix + "images/new/dark2.png"; //da
+			image10.src = linkPrefix + "images/new/dark2.png"; //da
 		
 		}
 
@@ -299,9 +299,9 @@ sampleButtons = function()
 			image4.src = linkPrefix + "images/Eye/1eye_foreground.png";  //reflection
 			image5.src = linkPrefix + "images/Eye/1eye_foreground.png";  //refraction	
 			image6.src = linkPrefix + "images//Eye/eye_alpha.jpg"; //alpha
-			image7.src = linkPrefix + "images/new/day_1.png"; //da
-			image8.src = linkPrefix + "images/new/day_2.png"; //da
-			image9.src = linkPrefix + "images/new/day_3.png"; //da
+			image7.src = linkPrefix + "images/new/da y_1.png"; //da
+			image8.src = linkPrefix + "images//Eye/day1.jpg"; //da
+			image9.src = linkPrefix + "images//Eye/day2.jpg"; //da
 			image10.src = linkPrefix + "images/new/day_4.png"; //da
 		
 		}
@@ -321,8 +321,8 @@ sampleButtons = function()
 			image5.src = linkPrefix + "images/Campbell/back-1.png";  //refraction	
 			image6.src = linkPrefix + "images/Campbell/alpha-3.png"; //alpha
 			image7.src = linkPrefix + "images/new/day_1.png"; //da
-			image8.src = linkPrefix + "images/new/day_2.png"; //da
-			image9.src = linkPrefix + "images/new/day_3.png"; //da
+			image8.src = linkPrefix + "images/Campbell/day1.png"; //da
+			image9.src = linkPrefix + "images/Campbell/day2.png"; //da
 			image10.src = linkPrefix + "images/new/day_4.png"; //da
 		
 		}
@@ -535,8 +535,8 @@ UPLOADinit = function()
 	image5.src = "images/Escher/handWithSphere/bg.png";//refraction
 	image6.src = "images/Escher/handWithSphere/alpha1.png";
 	image7.src = "images/1/day_1.png"; //alpha
-	image8.src = "images/1/day_2.png"; //alpha
-	image9.src = "images/1/day_3.png"; //alpha
+	image8.src = "images/Escher/handWithSphere/day1.png"; //alpha
+	image9.src = "images/Escher/handWithSphere/day2.png"; //alpha
 	image10.src = "images/1/day_4.png"; //alpha
 
 	// image1.src = "images/1/dark1.jpeg";//dark
@@ -822,17 +822,17 @@ function addEventListeners()
 	container7.addEventListener('dragexit', cancel, false);
 	container7.addEventListener('drop', dropFile, false);
 	
-	// var container8 = $container8[0];
-	// container8.addEventListener('dragover', cancel, false);
-	// container8.addEventListener('dragenter', cancel, false);
-	// container8.addEventListener('dragexit', cancel, false);
-	// container8.addEventListener('drop', dropFile, false);
+	var container8 = $container8[0];
+	container8.addEventListener('dragover', cancel, false);
+	container8.addEventListener('dragenter', cancel, false);
+	container8.addEventListener('dragexit', cancel, false);
+	container8.addEventListener('drop', dropFile, false);
 
-	// var container9 = $container9[0];
-	// container9.addEventListener('dragover', cancel, false);
-	// container9.addEventListener('dragenter', cancel, false);
-	// container9.addEventListener('dragexit', cancel, false);
-	// container9.addEventListener('drop', dropFile, false);
+	var container9 = $container9[0];
+	container9.addEventListener('dragover', cancel, false);
+	container9.addEventListener('dragenter', cancel, false);
+	container9.addEventListener('dragexit', cancel, false);
+	container9.addEventListener('drop', dropFile, false);
 
 	// var container10 = $container10[0];
 	// container10.addEventListener('dragover', cancel, false);

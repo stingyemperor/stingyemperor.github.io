@@ -187,7 +187,7 @@
            //vec4 colorFinal = c0 * (1.0 - T) + c1 * T;
 
             //vec4 colorFinal = c11*(1.0-d)*(1.0-T_d) + c10*(1.0-d)*T_d + c01*d*(1.0-T_d) + c00*d*T_d ; 
-            vec4 colorFinal = c0*(1.0-d)*(1.0-T) + c01*(1.0-d)*T + c10*d*(1.0-T) + c1*d*T ;
+            vec4 colorFinal = c1*(1.0-d)*(1.0-T) + c10*(1.0-d)*T + c01*d*(1.0-T) + c0*d*T ;
             
             if (lightsOnly )
             {
@@ -558,7 +558,7 @@
                         <div id = "basicImages" class= "inCollapse collapse in" > 
                        	    
                             <div class = "imgbox_container">
-                                <h6><span title="Insert or DragnDrop bright image here">Bright Image</span></h6>
+                                <h6><span title="Insert or DragnDrop bright image here">Bright Image:day</span></h6>
                                 <div>
                         		    <div id = "container2" class="imgThumb_container">
                                         <div class="btn-file">
@@ -570,7 +570,7 @@
                                 </div>
                             </div>
                             <div class = "imgbox_container">
-				    <h6><span title="Insert or DragnDrop dark image here">Dark Image</span></h6>
+				    <h6><span title="Insert or DragnDrop dark image here">Dark Image:day</span></h6>
                         		<div>
                                     <div id = "container1" class="imgThumb_container">
                                         <div class="btn-file">
@@ -592,7 +592,7 @@
                                 </div>
                             </div>
                             <div class = "imgbox_container">
-                            <h6><span title="Insert or DragnDrop day image 1">Day image</span></h6>
+                            <h6><span title="Insert or DragnDrop day image 1">Bright image: night</span></h6>
                             <div>
                                 <div id = "container8" class="imgThumb_container">
                                     <div class="btn-file">
@@ -603,7 +603,7 @@
                             </div>
                         </div>
                         <div class = "imgbox_container">
-                        <h6><span title="Insert or DragnDrop Day image 2">Night image</span></h6>
+                        <h6><span title="Insert or DragnDrop Day image 2">Dark image: night</span></h6>
                         <div>
                             <div id = "container9" class="imgThumb_container">
                                 <div class="btn-file">

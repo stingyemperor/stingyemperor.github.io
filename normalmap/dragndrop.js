@@ -89,15 +89,15 @@ sampleButtons = function()
 			FGscaleY = 0.67;
 			FGdis = 0.81;
 			mouseXY[0] = [0.34, -0.0746];
-			image1.src = "images/Escher/handWithSphere/dark0.png"; //dark
-			image2.src = "images/Escher/handWithSphere/bright0.png"; //bright
+			image2.src = "images/Escher/handWithSphere/day_bright.png"; //dark
+			image1.src = "images/Escher/handWithSphere/day_dark.png"; //bright
 			image3.src = "images/Escher/handWithSphere/shape0.png"; //shape map
 			image4.src = "images/Escher/handWithSphere/reflect2.jpg";  //reflection
 			image5.src = "images/Escher/handWithSphere/bg.png";//refraction
 			image6.src = "images/Escher/handWithSphere/alpha1.png";
 			image7.src = linkPrefix + "images/day_1.PNG"; //da
-			image8.src = linkPrefix + "images/Escher/handWithSphere/day1.png"; //da
-			image9.src = linkPrefix + "images/Escher/handWithSphere/day2.png"; //da
+			image9.src = linkPrefix + "images/Escher/handWithSphere/night_bright.png"; //da
+			image8.src = linkPrefix + "images/Escher/handWithSphere/night_dark.png"; //da
 			image10.src = linkPrefix + "images/day_4.PNG"; //da
 		}
 
@@ -528,16 +528,16 @@ UPLOADinit = function()
 	// image10.src = linkPrefix + "images/1/day_4.png"; //da
 	
 	alphaR = 0;
-	image1.src = "images/Escher/handWithSphere/dark0.png"; //dark
-	image2.src = "images/Escher/handWithSphere/bright0.png"; //bright
+	image2.src = "images/Escher/handWithSphere/day_bright.png"; //dark
+	image1.src = "images/Escher/handWithSphere/day_dark.png"; //bright
 	image3.src = "images/Escher/handWithSphere/shape0.png"; //shape map
 	image4.src = "images/Escher/handWithSphere/reflect2.jpg";  //reflection
 	image5.src = "images/Escher/handWithSphere/bg.png";//refraction
 	image6.src = "images/Escher/handWithSphere/alpha1.png";
-	image7.src = "images/1/day_1.png"; //alpha
-	image8.src = "images/Escher/handWithSphere/day1.png"; //alpha
-	image9.src = "images/Escher/handWithSphere/day2.png"; //alpha
-	image10.src = "images/1/day_4.png"; //alpha
+	image7.src = linkPrefix + "images/day_1.PNG"; //da
+	image9.src = linkPrefix + "images/Escher/handWithSphere/night_bright.png"; //da
+	image8.src = linkPrefix + "images/Escher/handWithSphere/night_dark.png"; //da
+	image10.src = linkPrefix + "images/day_4.PNG"; //da
 
 	// image1.src = "images/1/dark1.jpeg";//dark
 	// image2.src = "images/1/light1.jpeg";//bright

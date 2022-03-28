@@ -1,21 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang='en'>
   <head>
-    <meta charset="UTF-8" />
-
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./css/style.css" type="text/css" />
-    <title>Ray Caster</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
-    integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
-    crossorigin="anonymous" defer>
-</script>
-<script src="https://webglfundamentals.org/webgl/resources/webgl-utils.js"></script>
-    <script type="text/javascript" src="./js/gl-matrix.js"></script>
+    <title>Ray Traced Sphere and Plane</title>
+    <script type="text/javascript" src="warnMobileAndTablet.js" defer></script>
+    <script type="text/javascript"src="gl-matrix-min.js"></script>
+    <script type="text/javascript" src="index.js" defer></script>
+    
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <canvas id="glcanvas" width="1000" height="1000"></canvas>
-    <script src="./js/triangle.js"></script>
     
+    <div class="container">
+      
+      <div class="leftpane"></div>
+      <div class="middlepane">
+	<h1>Ray Tracer</h1>
+	<canvas id="glCanvas" width="1000" height="700"></canvas>
+      </div>
+      <div class="rightpane">
+	<ul>
+	  <div>fps: <span id="fps"></span></div>
+	  <li><p  style="font-size:20px">Drag mouse to move camera </p></li>
+	  <li><p  style="font-size:20px">Scroll mouse to cange fov </p></li>
+    <!-- <label>
+      <input type="checkbox" name="settings" value="forcefield">
+      Enable forcefield
+   </label> -->
+	</ul>
+	
+	
+      </div>
+    </div>
   </body>
 </html>

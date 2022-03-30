@@ -1,3 +1,4 @@
+
 var gameState = new Object;
 gameState.startTime = new Date() ;
 var sceneData = new Object;
@@ -120,6 +121,7 @@ function initGameState(gameState){
 
     gameState.lightPos = vec3.fromValues(20.0,20.0,20.0);
     gameState.lightSize = 0.2;
+    gameState.areaLight = 0.0;
     
     //set sphere position and radius
     gameState.sphereCenterRadius = [
@@ -342,8 +344,45 @@ function getCanvas(){
 	vec3.add(gameState.eyeCenter, gameState.eyeCenter, toCenter);
 	sceneData.frameCount = 0.0;
     }
+
+
+    function keyEventHandler(e){
+        var name = e.key;
+        var code = e.code;
+
+
+        if(code == 'KeyA'){
+            const moveLeft = vec3.fromValues(-1.0,0.0,0.0);
+            vec3.add(gameState.lightPos,gameState.lightPos,moveLeft);
+            sceneData.frameCount = 0.0;
+          
+        }else if(code == 'KeyD'){
+            const moveRight = vec3.fromValues(1.0,0.0,0.0);
+            vec3.add(gameState.lightPos,gameState.lightPos,moveRight);
+            sceneData.frameCount = 0.0;
+            
+        }else if(code == 'KeyW'){
+            const moveUp = vec3.fromValues(0.0,1.0,0.0);
+            vec3.add(gameState.lightPos,gameState.lightPos,moveUp);
+            sceneData.frameCount = 0.0;
+            
+        }
+        else if(code == 'KeyS'){
+            const moveDown = vec3.fromValues(0.0,-1.0,0.0);
+            vec3.add(gameState.lightPos,gameState.lightPos,moveDown);
+            sceneData.frameCount = 0.0;
+            console.log(gameState.lightPos);
+        }
+        
+
+
+    }
+
+
+
     canvas.addEventListener("wheel",scrollEventHandler);
     canvas.addEventListener("mousemove",mouseEventHandler);
+    canvas.addEventListener("keydown",keyEventHandler);
     return canvas;
 }
 
@@ -356,5 +395,13 @@ function getGL(canvas){
 	return null ;
     }
     return gl;
+}
+
+function areaLightCheckHandler(e){
+    var checkBox = document.getElementById("areaLightCheck");
+    if(checkBox.checked==true){
+        console.log("nice");
+    }
+
 }
 

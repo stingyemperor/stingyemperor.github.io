@@ -12,6 +12,8 @@ uniform sampler2D texture;
 uniform vec3 lightPos;
 uniform float lightSize;
 uniform float timeSinceStart;
+
+uniform bool areaLight;
 // record the position of the spheres
 // value of infinity  means the sphere should not be shown
 uniform vec4 sphereCenterRadius[numSphere];
@@ -171,7 +173,7 @@ float computeShadow( vec3 origin, vec3 dir){
 void materialBounce( inout vec3 origin, inout vec3 dir, inout float surfaceLight, float t,vec4 centerRadius){
   vec3 hitPoint = origin + t * dir;
 
-  vec3 lightPos_ = vec3(5.0,5.0,1.0);
+  vec3 lightPos_ = lightPos;
   vec3 toLightDir = normalize(lightPos_ - hitPoint);
   
   vec3 surfaceNormal;

@@ -15,17 +15,18 @@
       <div class="leftpane"></div>
       <div class="middlepane">
 	<h1>Ray Tracer</h1>
-	<canvas id="glCanvas" width="1000" height="700"></canvas>
+	<canvas tabindex="0" id="glCanvas" width="1000" height="700"></canvas>
       </div>
       <div class="rightpane">
 	<ul>
 	  <div>fps: <span id="fps"></span></div>
 	  <li><p  style="font-size:20px">Drag mouse to move camera </p></li>
 	  <li><p  style="font-size:20px">Scroll mouse to cange fov </p></li>
-    <!-- <label>
-      <input type="checkbox" name="settings" value="forcefield">
-      Enable forcefield
-   </label> -->
+    <li><p  style="font-size:20px">Use WASD keys to move light</p></li>
+    <label for="areaLightCheck">
+      <input type="checkbox" id="areaLightCheck" onClick = "areaLightCheckHandler">
+      Area Light
+   </label>
 	</ul>
 	
 	

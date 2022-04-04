@@ -158,6 +158,23 @@ float computeShadow( vec3 origin, vec3 dir){
     return 1.0;
 }
 
+float random(vec3 scale, float seed){return fract(sin(dot(gl_FragCoord.xyz + seed, scale)) * 4347438.38745 + seed);}
+
+//return random point on the surface of a unit sphere
+vec3 randomUnitDirection(float seed){
+  float u = random(vec3(2.211,7.5334,2.3534), seed);
+  float v = random(vec3(4.4731,2.5994,4.321   ), seed);
+  float theta = pi * 2.0 * u;
+  float phi = pi * (v - 0.5);
+  return vec3(cos(phi)*cos(theta), cos(phi)*sin(theta), sin(phi));
+}
+
+// return a random direction whose probability distribution is propotional to dot(x, normal); 
+// normal should have length 1
+vec3 cosineWeightedDirection(float seed, vec3 normal){
+  return normalize(normal + randomUnitDirection(seed));
+}
+
 // float soft_shadows( vec3 origin, vec3 dir){
 //   float shadow = 1.0;
 //   float d = 0;
@@ -170,6 +187,14 @@ float computeShadow( vec3 origin, vec3 dir){
 
 //return new hit surface color
 //bounceCount is passed for seed (to get diffrent random value perbounce)
+float reflectance(float cos_theta, float  refractionRatio){
+  // solution from https://raytracing.github.io/books/RayTracingInOneWeekend.html#dielectrics/schlickapproximation
+  float r0 = (1.0 - refractionRatio) / (1.0 + refractionRatio);
+  r0 = r0 * r0;
+  return r0 + (1.0 - r0) * pow(1.0 - cos_theta, 5.0);
+}
+
+
 void materialBounce( inout vec3 origin, inout vec3 dir, inout float surfaceLight, float t,vec4 centerRadius){
   vec3 hitPoint = origin + t * dir;
 
@@ -200,9 +225,26 @@ void materialBounce( inout vec3 origin, inout vec3 dir, inout float surfaceLight
     float specularIndex = max(0.0, dot(reflectDir , toLightDir));
     specular = 2.0 * pow(specularIndex, 20.0);
 
-  float shadow = computeShadow(hitPoint + epsilon * surfaceNormal, toLightDir);
-  surfaceLight = ambient + ( (specular + diffuse) * shadow );   //surfaceLight = ambient + ( (specular + diffuse) * shadow );
-  origin = hitPoint + epsilon * surfaceNormal;
+  // float shadow = computeShadow(hitPoint + epsilon * surfaceNormal, toLightDir);
+  // surfaceLight = ambient + ( (specular + diffuse) * shadow );   //surfaceLight = ambient + ( (specular + diffuse) * shadow );
+  // origin = hitPoint + epsilon * surfaceNormal;
+
+    float reflectConstant = -2.3;
+    bool inCircle =  dot(surfaceNormal , dir) > 0.0 ;
+    vec3 refractSurfaceNormal = (inCircle) ? - surfaceNormal : surfaceNormal;
+    float refractionRatio = (inCircle) ? reflectConstant :  1.0/reflectConstant ;
+    float cos_theta = dot(normalize(-dir) , normalize(refractSurfaceNormal)); 
+    float sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+    bool cannot_refract = refractionRatio * sin_theta > 1.0;
+    if(cannot_refract || 0.00001 * reflectance(cos_theta, refractionRatio ) > 10.0 * random(vec3(0.631,0.34,0.4534), 109.4 * timeSinceStart + 36.8* float(2))){
+      dir = reflect(dir, refractSurfaceNormal) ;
+      origin = hitPoint + epsilon * refractSurfaceNormal;
+    }
+    else{
+      // glsl has builtin support for refraction!!!
+      dir = refract(normalize(dir), refractSurfaceNormal, refractionRatio);
+      origin = hitPoint - epsilon * refractSurfaceNormal;
+    }
 }
 
 vec3 findBackGround(vec3 origin, vec3 dir){
@@ -218,31 +260,38 @@ vec3 findColor(vec3  origin,vec3 dir ){
   vec3 accumColor = vec3(0.0,0.0,0.0);
   
 
+  for(int i=0; i<2;i++){
+
   vec4 hitObjCenterRadius;
   float hitObjMaterial;
   vec3 hitObjColor;
-  
-  //record the nearest hit so far
+  bool breakEarly = false;
+
   float t = intersectObjects(o, d, hitObjCenterRadius, hitObjMaterial, hitObjColor);
 
-  
   float surfaceLight;
   if(t == inf){
     surfaceLight = 1.0;
     hitObjColor = findBackGround(o,d);
+    breakEarly = true;
   }
   else{
     materialBounce(o, d, surfaceLight, t,hitObjCenterRadius);
   }
-  colorMask = hitObjColor;
-  accumColor = colorMask * surfaceLight;
+  colorMask *= hitObjColor;
+  accumColor += colorMask * surfaceLight;
+  if(breakEarly) break;
+
+  }
+
+  //record the nearest hit so far
 
   return accumColor;
 }
 
 void main(){
   
-  vec3 initialRayBlur = initialRay;  //initialRay + 0.001 * randomUnitDirection(timeSinceStart)
+  vec3 initialRayBlur = initialRay+ 0.001 * randomUnitDirection(timeSinceStart);  //initialRay + 0.001 * randomUnitDirection(timeSinceStart)
   vec3 textureData = texture2D(texture, gl_FragCoord.xy / vec2(1000,700)).rgb;
   gl_FragColor = vec4(mix(findColor(eyePos, initialRayBlur), textureData, textureWeight), 1.0);
 }

@@ -195,10 +195,10 @@ float reflectance(float cos_theta, float  refractionRatio){
 }
 
 
-void materialBounce( inout vec3 origin, inout vec3 dir, inout float surfaceLight, float t,vec4 centerRadius){
+void materialBounce( inout vec3 origin, inout vec3 dir, inout float surfaceLight, float t,vec4 centerRadius, int bounceCount){
   vec3 hitPoint = origin + t * dir;
 
-  vec3 lightPos_ = lightPos;
+  vec3 lightPos_ = lightPos+ lightSize * random(vec3(5423.324,865.34,8.43),timeSinceStart) * randomUnitDirection(timeSinceStart);
   vec3 toLightDir = normalize(lightPos_ - hitPoint);
   
   vec3 surfaceNormal;
@@ -221,30 +221,38 @@ void materialBounce( inout vec3 origin, inout vec3 dir, inout float surfaceLight
   
   // compute direction_of_next_ray and specular according to material
 
-    dir = reflectDir ;
-    float specularIndex = max(0.0, dot(reflectDir , toLightDir));
-    specular = 2.0 * pow(specularIndex, 20.0);
 
   // float shadow = computeShadow(hitPoint + epsilon * surfaceNormal, toLightDir);
   // surfaceLight = ambient + ( (specular + diffuse) * shadow );   //surfaceLight = ambient + ( (specular + diffuse) * shadow );
   // origin = hitPoint + epsilon * surfaceNormal;
 
-    float reflectConstant = -2.3;
-    bool inCircle =  dot(surfaceNormal , dir) > 0.0 ;
-    vec3 refractSurfaceNormal = (inCircle) ? - surfaceNormal : surfaceNormal;
-    float refractionRatio = (inCircle) ? reflectConstant :  1.0/reflectConstant ;
-    float cos_theta = dot(normalize(-dir) , normalize(refractSurfaceNormal)); 
-    float sin_theta = sqrt(1.0 - cos_theta * cos_theta);
-    bool cannot_refract = refractionRatio * sin_theta > 1.0;
-    if(cannot_refract || 0.00001 * reflectance(cos_theta, refractionRatio ) > 10.0 * random(vec3(0.631,0.34,0.4534), 109.4 * timeSinceStart + 36.8* float(2))){
-      dir = reflect(dir, refractSurfaceNormal) ;
-      origin = hitPoint + epsilon * refractSurfaceNormal;
-    }
-    else{
-      // glsl has builtin support for refraction!!!
-      dir = refract(normalize(dir), refractSurfaceNormal, refractionRatio);
-      origin = hitPoint - epsilon * refractSurfaceNormal;
-    }
+    // float reflectConstant = -2.3;
+    // bool inCircle =  dot(surfaceNormal , dir) > 0.0 ;
+    // vec3 refractSurfaceNormal = (inCircle) ? - surfaceNormal : surfaceNormal;
+    // float refractionRatio = (inCircle) ? reflectConstant :  1.0/reflectConstant ;
+    // float cos_theta = dot(normalize(-dir) , normalize(refractSurfaceNormal)); 
+    // float sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+    // bool cannot_refract = refractionRatio * sin_theta > 1.0;
+    // if(cannot_refract || 0.00001 * reflectance(cos_theta, refractionRatio ) > 10.0 * random(vec3(0.631,0.34,0.4534), 109.4 * timeSinceStart + 36.8* float(bounceCount))){
+    //   dir = reflect(dir, refractSurfaceNormal) ;
+    //   origin = hitPoint + epsilon * refractSurfaceNormal;
+    // }
+    // else{
+    //   // glsl has builtin support for refraction!!!
+    //   dir = refract(normalize(dir), refractSurfaceNormal, refractionRatio);
+    //   origin = hitPoint - epsilon * refractSurfaceNormal;
+    // }
+
+    // surfaceLight = 0.1 * (diffuse);
+    // return ;
+
+    dir = reflectDir ;
+    float specularIndex = max(0.0, dot(reflectDir , toLightDir));
+    specular = 2.0 * pow(specularIndex, 20.0);
+
+  float shadow = computeShadow(hitPoint + epsilon * surfaceNormal, toLightDir);
+  surfaceLight = ambient + ( (specular + diffuse) * shadow );
+  origin = hitPoint + epsilon * surfaceNormal;
 }
 
 vec3 findBackGround(vec3 origin, vec3 dir){
@@ -276,7 +284,7 @@ vec3 findColor(vec3  origin,vec3 dir ){
     breakEarly = true;
   }
   else{
-    materialBounce(o, d, surfaceLight, t,hitObjCenterRadius);
+    materialBounce(o, d, surfaceLight, t,hitObjCenterRadius,i);
   }
   colorMask *= hitObjColor;
   accumColor += colorMask * surfaceLight;

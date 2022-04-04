@@ -126,7 +126,7 @@ function initGameState(gameState){
     //set sphere position and radius
     gameState.sphereCenterRadius = [
 		0.0,-1.0,0.0,5.0,		    
-        0.0,0.9,-5.0,1.0,
+        0.0,1.0,-5.0,0.9,
                     
                     
 ];

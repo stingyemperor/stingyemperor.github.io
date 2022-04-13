@@ -1,9 +1,0 @@
-/webgl-path-tracing/
-*~
-#*#
-#*#
-#.*#
-*.png
-#*#
-!result.png
-*.zip

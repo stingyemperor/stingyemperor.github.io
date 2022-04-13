@@ -902,10 +902,10 @@ void main() {
     vec3 compounded_k_rg = vec3( 1.0 );
     bool hasHit;
    
-      // if(hit.materialID == 3){
-      //   vec2 uv = planeMap(hit.position);
-      //   iResult = texture2D(uRandomTexture1,uv).xyz;
-      // }
+       if(hit.materialID == 3){
+         vec2 uv = planeMap(hit.position);
+         iResult = texture2D(uRandomTexture1,uv).xyz;
+       }
       vec3 iLocal =castRay(nextRay,hit,hasHit,k_rg);
       iResult += compounded_k_rg*iLocal;
       

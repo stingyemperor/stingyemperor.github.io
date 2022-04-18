@@ -27,7 +27,7 @@
       document.addEventListener("DOMContentLoaded", function () {
         const glsl = new GLSL({
           canvasId: "canvas",
-          fragmentShaderSource: /*glsl*/ `
+          fragmentShaderSource: /*glsl*/ `#version 300 es
 precision mediump float;
 
 
@@ -55,8 +55,11 @@ uniform vec3 uMetalColor;
 uniform float uFuzziness;
 uniform float uIndexOfRefraction;
 uniform int uSamples;
+uniform sampler2D uRandomTexture0;
 uniform sampler2D uRandomTexture1;
-uniform sampler2D uRandomTexture2;
+uniform sampler2D uNormalTexture0;
+uniform sampler2D uNormalTexture1;
+uniform sampler2D uSphereMap;
 uniform float uSphereX;
 uniform float uSphereY;
 uniform float uSphereZ;
@@ -82,7 +85,11 @@ const int NUM_HITS = 1;
 const float DEFAULT_TMAX = 10.0e6;
 const float DEFAULT_TMIN = 10.0e-4;
 const int NUM_ITERATIONS = 2;
-const vec3 BACKGROUND_COLOR = vec3( 0.26, 0.26, 0.3 );
+
+float r = 36.0/255.0;
+float g = 28.0/255.0;
+float b = 59.0/255.0;
+vec3 BACKGROUND_COLOR = vec3( r, g, b);
 
 //============================================================================
 // Structs
@@ -167,8 +174,11 @@ void initScene(){
   // spheres[1].materialID = 1;
 
   
-  // Silver material.
-  materials[0].k_d = vec3( 0.96, 0.85, 0.65 );
+  // Sphere material.
+  float s_r = 200.0/225.0;
+  float s_g = 187.0/225.0;
+  float s_b = 228.0/225.0;
+  materials[0].k_d = vec3( s_r, s_g, s_b );
   materials[0].k_a = 0.1 * materials[0].k_d;
   materials[0].k_r = 2.0 * materials[0].k_d;
   materials[0].k_rg = 0.5 * materials[0].k_r;
@@ -190,7 +200,7 @@ void initScene(){
   materials[2].n = 128.0;
 
       // Light 0.
-  lights[0].position = vec3( 4.0, 8.0, -3.0 );
+  lights[0].position = vec3( 4.0, 8.0, 7.0 );
   lights[0].I_a = vec3( 0.1, 0.1, 0.1 );
   lights[0].I_source = vec3( 0.5, 0.5, 0.5 );
   // // Light 1.
@@ -239,6 +249,56 @@ void initScene(){
 // (hitNormal).
 /////////////////////////////////////////////////////////////////////////////
 
+
+
+
+float random(float x) {
+  return fract(sin(x) * 4245.324);
+}
+
+float random(vec2 x) {
+  return fract(sin(dot(x, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+vec2 random2(vec2 x) {
+  return fract(sin(vec2(dot(x, vec2(12.9898, 78.233)), dot(x, vec2(19.392, 59.434)))) * 43758.5453123);
+}
+
+float randseed = 0.423;
+
+float random() {
+  randseed += 0.01;
+  return random(randseed);
+}
+
+vec3 random_in_unit_sphere() {
+  vec3 v;
+  for (int i = 0; i <  100; i++) {
+    randseed += 0.01;
+    float rx = random(randseed);
+    randseed += 0.01;
+    float ry = random(randseed);
+    randseed += 0.01;
+    float rz = random(randseed);
+    v = vec3(rx, ry, rz) * 2.0 - 1.0;
+    if (length(v) <= 1.0) break;
+  }
+  return v;
+}
+
+vec2 random_on_unit_disk() {
+  vec2 v;
+  for (int i = 0; i < 100; i++) {
+    randseed += 0.01;
+    float rx = random(randseed);
+    randseed += 0.01;
+    float ry = random(randseed);
+    v = vec2(rx, ry) * 2.0 - 1.0;
+    if (length(v) <= 1.0) break;
+  }
+  return v;
+}
+
 bool intersectPlane( in Plane pln, in Ray ray,
                      in float tmin, in float tmax,
                      inout HitInfo info)
@@ -273,6 +333,19 @@ bool intersectPlane( in Plane pln, in Ray ray,
     float t0 = (-pln.D - NRo) / NRd;
     if ( t0 < tmin || t0 > tmax ) return false;
     return true;
+}
+
+
+vec2 planeMap(vec3 point){
+
+vec3 normal = vec3(0.0, 1.0, 0.0);
+vec3 u = normalize(vec3(normal.y,-normal.x,0));
+vec3 v = cross(normal,u);
+
+float hu = dot(u,point);
+float hv = dot(v,point);
+
+return vec2(hu,hv);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -341,6 +414,17 @@ bool intersectSphere( in Sphere sph, in Ray ray,
     return false;
 }
 
+
+vec2 sphericalMap(vec3 point){
+    //float theata =atan2(point.x,point.z);
+    //vec3 temp = point - 
+    vec3 point_n = normalize(point);
+    float u = 0.5 - atan(point_n.z,point_n.x)/(TWO_PI);
+    float v = 0.5-asin(point_n.y)/PI;
+    return vec2(u,v);
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Computes (I_a * k_a) + k_shadow * I_source * [ k_d * (N.L) + k_r * (R.V)^n ].
 // Input vectors L, N and V are pointing AWAY from surface point.
@@ -365,6 +449,36 @@ vec3 phongLighting( in vec3 L, in vec3 N, in vec3 V, in bool inShadow,
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Refraction
+/////////////////////////////////////////////////////////////////////////////
+
+
+// float schlick(float cosine, float ref) {
+//   float r0 = (1.0 - ref) / (1.0 + ref);
+//   r0 = r0 * r0;
+//   return r0 + (1.0 - r0) * pow((1.0 - cosine), 5.0);
+// }
+
+// vec3 dielectric(in Ray ray,inout HitInfo hit){
+//   vec3 N;
+//   float eta;
+//   float cosine;
+//   float indexOfRefraction=2.0;
+
+//   if(dot(ray.direction,hit.hitNormal)<0.0){
+//     N = hit.hitNormal;
+//     eta = 1.0/indexOfRefraction;
+//     cosine = -dot(ray.direction,hit.hitNormal)/length(ray.direction);
+//   }else{
+//     N = -hit.hitNormal;
+//     eta = indexOfRefraction;
+//     cosine = indexOfRefraction*dot(ray.direction,hit.hitNormal)/length(ray.direction);
+//   }
+
+//   vec3 r = refract(normalize(ray.direction,N,eta));
+//   dir = r == vec3(0.0) || random() < schlick(cosine, indexOfRefraction) ? reflect(ray.direction, N) : r;
+// }
 /////////////////////////////////////////////////////////////////////////////
 // Casts a ray into the scene and returns color computed at the nearest
 // intersection point. The color is the sum of light from all light sources,
@@ -394,6 +508,7 @@ vec3 castRay(in Ray ray,inout HitInfo info,out bool hasHit,inout vec3 k_rg){
   vec3 nearestHitNormal;
   int nearestHitMaterialID;
   bool hasHitSomething = false;
+  bool hasHitPlane=false;
 
 
   for(int i=0;i<NUM_PLANES; i++){
@@ -411,6 +526,7 @@ vec3 castRay(in Ray ray,inout HitInfo info,out bool hasHit,inout vec3 k_rg){
       }
 
       hasHitSomething = true;
+      hasHitPlane=true;
     }
   }
 
@@ -427,18 +543,32 @@ vec3 castRay(in Ray ray,inout HitInfo info,out bool hasHit,inout vec3 k_rg){
         info.materialID = nearestHitMaterialID;
       }
       hasHitSomething=true;
+      hasHitPlane=false;
     }
   }
 
 
   hasHit = hasHitSomething;
 
-  if ( !hasHitSomething ) return BACKGROUND_COLOR;
+  if ( !hasHitSomething ) {
+    // vec2 uv = sphericalMap(nearestHitPos);
+    // vec3 temp = texture2D(uNormalTexture1,uv).xyz;
+
+    // return temp;
+    return BACKGROUND_COLOR;
+  }
 
 
   vec3 iTotal;
 
   for(int i=0;i<NUM_LIGHTS; i++){
+
+    if(hasHitPlane){
+      vec2 uv = planeMap(nearestHitPos);
+      vec3 temp = texture2D(uNormalTexture1,uv).xyz;
+      nearestHitNormal = 2.0*temp-1.0;
+      info.normal = nearestHitNormal;
+    }
 
     vec3 L = normalize(lights[i].position - nearestHitPos);
     vec3 N = normalize(nearestHitNormal);
@@ -450,220 +580,59 @@ vec3 castRay(in Ray ray,inout HitInfo info,out bool hasHit,inout vec3 k_rg){
     shadowRay.origin = nearestHitPos;
     shadowRay.direction = normalize(lights[i].position - nearestHitPos);
 
-float rayDistance = length(lights[i].position - nearestHitPos);
+    float rayDistance = length(lights[i].position - nearestHitPos);
 
-for(int j = 0; j<NUM_PLANES; j++){
-  if(intersectPlane(planes[j],shadowRay,DEFAULT_TMIN,rayDistance)){
-    shadow = true;
-  }
-}
+    for(int j = 0; j<NUM_PLANES; j++){
+      if(intersectPlane(planes[j],shadowRay,DEFAULT_TMIN,rayDistance)){
+        shadow = true;
+      }
+    }
 
-for(int j=0;j<NUM_SPHERES; j++){
-  if(intersectSphere(spheres[j],shadowRay,DEFAULT_TMIN,rayDistance)){
-    shadow = true;
-  }
-}
-
-for(int j=0;j<NUM_SPHERES; j++){
+    if(!shadow){
+      for(int j=0;j<NUM_SPHERES; j++){
       if(intersectSphere(spheres[j],shadowRay,DEFAULT_TMIN,rayDistance)){
         shadow = true;
       }
     }
 
-    // iTotal+=phongLighting(L,N,V,shadow,materials[0],lights[0]);
+    }
 
 
+    vec2 uv = planeMap(nearestHitPos);
+    vec3 temp = texture2D(uRandomTexture1,uv).xyz;
+
+    Material texMaterial;
+    texMaterial.k_d = 1.0*temp;
+    texMaterial.k_a = 0.5*texMaterial.k_d;
+    texMaterial.k_r = 0.1*texMaterial.k_d;
+    texMaterial.k_rg = 0.1*texMaterial.k_r;
+    texMaterial.n = 64.0;
+    
     if(nearestHitMaterialID==0){
       Material mat = materials[ 0];
+      k_rg = materials[0].k_rg;
       iTotal += phongLighting(L,N,V,shadow,mat,lights[i]);
     }else if(nearestHitMaterialID==1){ 
       Material mat = materials[ 1];
+      k_rg = materials[1].k_rg;
       iTotal += phongLighting(L,N,V,shadow,mat,lights[i]);
     }else if(nearestHitMaterialID==2){
       Material mat = materials[ 2];
       iTotal += phongLighting(L,N,V,shadow,mat,lights[i]);
     }else if(nearestHitMaterialID==3){
-      Material mat = materials[0];
-      iTotal += phongLighting(L,N,V,shadow,mat,lights[i]);
+      k_rg = texMaterial.k_rg;
+      
+      iTotal += phongLighting(L,N,V,shadow,texMaterial,lights[i]);
     }
     
 
-  }
-
-  if(nearestHitMaterialID==0){
-    k_rg = materials[0].k_rg;
-  }
-  else if(nearestHitMaterialID==1){ 
-    k_rg = materials[1].k_rg;
-  }else if(nearestHitMaterialID==2){
-    k_rg = materials[2].k_rg;
-  }else if(nearestHitMaterialID==3){
-    k_rg = materials[0].k_rg;
   }
 
   return iTotal;
 
 }
 
-// bool castRayCheck(in Ray ray,in HitInfo info){
 
-// ///////////////////////////////////////////////////////////////////////////
-// // * Try interesecting input ray with all the planes and spheres,
-// //   and record the front-most (nearest) interesection.
-// // * If there is interesection, need to record hasHitSomething,
-// //   nearest_t, nearest_hitPos, nearest_hitNormal, nearest_hitMatID.
-// ///////////////////////////////////////////////////////////////////////////
-
-// HitInfo hit;
-// float nearestT = DEFAULT_TMAX;
-// vec3 nearestHitPos;
-// vec3 nearestHitNormal;
-// int nearestHitMaterialID;
-// bool hasHitSomething = false;
-
-
-// for(int i=0;i<NUM_PLANES; i++){
-// if(intersectPlane(planes[i],ray,DEFAULT_TMIN,DEFAULT_TMAX,hit)){
-//   if(hit.t<nearestT){
-//     nearestHitPos = hit.position;
-//     nearestHitNormal = hit.normal;
-//     nearestHitMaterialID = hit.materialID;
-//     nearestT = hit.t;
-//   }
-
-//   hasHitSomething = true;
-// }
-// }
-
-// for(int i=0;i<NUM_SPHERES; i++){
-// if(intersectSphere(spheres[i],ray,DEFAULT_TMIN,DEFAULT_TMAX,hit)){
-//   if(hit.t<nearestT){
-//     nearestHitPos = hit.position;
-//     nearestHitNormal = hit.normal;
-//     nearestHitMaterialID = hit.materialID;
-//     nearestT = hit.t;
-//   }
-//   hasHitSomething=true;
-// }
-// }
-
-
-// }
-
-// vec3 accumulateColor(in Ray ray,inout HitInfo hit,inout vec3 k_rg){
-
-//   vec3 iTotal;
-//   vec3 nearestHitPos = hit.position;
-//   vec3 nearestHitNormal = hit.normal;
-//   int nearestHitMaterialID = hit.materialID;
-  
-//   for(int i=0;i<NUM_LIGHTS; i++){
-
-//     vec3 L = normalize(lights[i].position - nearestHitPos);
-//     vec3 N = normalize(nearestHitNormal);
-//     vec3 V = normalize(ray.origin - nearestHitPos);
-//     int materialID = nearestHitMaterialID;
-//     bool shadow = false;
-//     Ray shadowRay;
-
-//     shadowRay.origin = nearestHitPos;
-//     shadowRay.direction = normalize(lights[i].position - nearestHitPos);
-
-//     float rayDistance = length(lights[i].position - nearestHitPos);
-
-//     for(int j = 0; j<NUM_PLANES; j++){
-//       if(intersectPlane(planes[j],shadowRay,DEFAULT_TMIN,rayDistance)){
-//         shadow = true;
-//       }
-//     }
-
-//     for(int j=0;j<NUM_SPHERES; j++){
-//       if(intersectSphere(spheres[j],shadowRay,DEFAULT_TMIN,rayDistance)){
-//         shadow = true;
-//       }
-//     }
-
-//     // iTotal+=phongLighting(L,N,V,shadow,materials[0],lights[0]);
-
-
-//     if(nearestHitMaterialID==0){
-//       Material mat = materials[ 0];
-//       iTotal += phongLighting(L,N,V,shadow,mat,lights[i]);
-//     }else if(nearestHitMaterialID==1){ 
-//       Material mat = materials[ 1];
-//       iTotal += phongLighting(L,N,V,shadow,mat,lights[i]);
-//     }else if(nearestHitMaterialID==2){
-//       Material mat = materials[ 2];
-//       iTotal += phongLighting(L,N,V,shadow,mat,lights[i]);
-//     }else if(nearestHitMaterialID==3){
-//       Material mat = materials[0];
-//       iTotal += phongLighting(L,N,V,shadow,mat,lights[i]);
-//     }
-    
-
-//   }
-
-//   if(nearestHitMaterialID==0){
-//     k_rg = materials[0].k_rg;
-//   }
-//   else if(nearestHitMaterialID==1){ 
-//     k_rg = materials[1].k_rg;
-//   }else if(nearestHitMaterialID==2){
-//     k_rg = materials[2].k_rg;
-//   }else if(nearestHitMaterialID==3){
-//     k_rg = materials[0].k_rg;
-//   }
-
-//   return iTotal;
-// }
-
-
-float random(float x) {
-  return fract(sin(x) * 4245.324);
-}
-
-float random(vec2 x) {
-  return fract(sin(dot(x, vec2(12.9898, 78.233))) * 43758.5453123);
-}
-
-vec2 random2(vec2 x) {
-  return fract(sin(vec2(dot(x, vec2(12.9898, 78.233)), dot(x, vec2(19.392, 59.434)))) * 43758.5453123);
-}
-
-float randseed = 0.423;
-
-float random() {
-  randseed += 0.01;
-  return random(randseed);
-}
-
-vec3 random_in_unit_sphere() {
-  vec3 v;
-  for (int i = 0; i <  100; i++) {
-    randseed += 0.01;
-    float rx = random(randseed);
-    randseed += 0.01;
-    float ry = random(randseed);
-    randseed += 0.01;
-    float rz = random(randseed);
-    v = vec3(rx, ry, rz) * 2.0 - 1.0;
-    if (length(v) <= 1.0) break;
-  }
-  return v;
-}
-
-vec2 random_on_unit_disk() {
-  vec2 v;
-  for (int i = 0; i < 100; i++) {
-    randseed += 0.01;
-    float rx = random(randseed);
-    randseed += 0.01;
-    float ry = random(randseed);
-    v = vec2(rx, ry) * 2.0 - 1.0;
-    if (length(v) <= 1.0) break;
-  }
-  return v;
-}
 
 mat3 camera(in vec3 pos, in vec3 tar, in vec3 up) {
   vec3 cz = normalize(tar - pos);
@@ -672,158 +641,6 @@ mat3 camera(in vec3 pos, in vec3 tar, in vec3 up) {
   return mat3(cx, cy, cz);
 }
 
-
-// bool plane(in vec3 pos, in vec3 dir, in float y,
-//   in int reflectType, in float tmin, inout float tmax, inout HitInfo info) {
-//   if (dir.y == 0.0) return false;
-//   float tt = (y - pos.y) / dir.y;
-//   if (tt > tmin && tt < tmax) {
-//     info.pos = pos + tt * dir;
-//     info.normal = vec3(0.0, 1.0, 0.0);
-//     info.reflectType = reflectType;
-//     return true;
-//   }
-//   return false;
-// }
-
-// bool sphere(in vec3 pos, in vec3 dir, in vec3 center, in float radius,
-//   in int reflectType, in float tmin, inout float tmax, inout HitInfo info) {
-//   vec3 oc = pos - center;
-//   float a = dot(dir, dir);
-//   float b = dot(oc, dir);
-//   float c = dot(oc, oc) - radius * radius;
-//   float dis = b * b - a * c;
-
-//   if (dis < 0.0) return false;
-
-//   float tt = (-b - sqrt(dis)) / a;
-//   if (tt > tmin && tt < tmax) {
-//     tmax = tt;
-//     info.pos = pos + tt * dir;
-//     info.normal = normalize(info.pos - center);
-//     info.reflectType = reflectType;
-//     return true;
-//   }
-//   tt = (-b + sqrt(dis)) / a;
-//   if (tt > tmin && tt < tmax) {
-//     tmax = tt;
-//     info.pos = pos + tt * dir;
-//     info.normal = normalize(info.pos - center);
-//     info.reflectType = reflectType;
-//     return true;
-//   }
-
-//   return false;
-// }
-
-// vec2 sphericalMap(vec3 point){
-
-//     //float theata =atan2(point.x,point.z);
-//     //vec3 temp = point - 
-
-//     vec3 point_n = normalize(point);
-//     float u = 0.5 - atan(point_n.z,point_n.x)/(TWO_PI);
-//     float v = 0.5-asin(point_n.y)/PI;
-
-//     return vec2(u,v);
-
-// }
-
-
-
-vec2 planeMap(vec3 point){
-
-    vec3 normal = vec3(0.0, 1.0, 0.0);
-    vec3 u = normalize(vec3(normal.y,-normal.x,0));
-    vec3 v = cross(normal,u);
-    
-    float hu = dot(u,point);
-    float hv = dot(v,point);
-
-    return vec2(hu,hv);
-}
-
-// const float POS_RADIUS = 3.0;
-
-
-// vec3 sphereTranslateX = vec3(1.0,0.0,0.0);
-
-// vec3 SPHERE_POS = vec3(2.0,0.0,0.0);
-
-
-
-// const vec3 SPHERE_POS1 = vec3(3.0, 2.0,3.0);
-// const vec3 SPHERE_POS2 = vec3(POS_RADIUS * cos(TWO_PI / 3.0), 3.0, POS_RADIUS * sin(TWO_PI / 3.0));
-// const vec3 SPHERE_POS3 = vec3(POS_RADIUS * cos(TWO_PI / 3.0 * 2.0), 0.0, POS_RADIUS * sin(TWO_PI / 3.0 * 2.0));
-// const float SPHERE_RADIUS = 2.0;
-
-
-
-// bool intersect(in vec3 pos, in vec3 dir, inout HitInfo info) {
-//   float tmin = 0.00001;
-//   float tmax = 10000.0;
-//   bool hit = false;
-//   hit = sphere(pos, dir, SPHERE_POS, SPHERE_RADIUS, 2, tmin, tmax, info) || hit;
-//   hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS, 3, tmin, tmax, info) || hit;
-// //   hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, 3, tmin, tmax, info) || hit;
-//   hit = plane(pos, dir, -SPHERE_RADIUS, 0, tmin, tmax, info) || hit;
-//   return hit;
-// }
-
-// float schlick(float cosine, float ref) {
-//   float r0 = (1.0 - ref) / (1.0 + ref);
-//   r0 = r0 * r0;
-//   return r0 + (1.0 - r0) * pow((1.0 - cosine), 5.0);
-// }
-
-
-// vec3 trace(in vec3 pos, in vec3 dir) {
-//   HitInfo info;
-//   vec3 c = vec3(1.0);
-//   for (int i = 0; i < 10; i++) {
-//     if (intersect(pos, dir, info)) {
-//       pos = info.pos;
-//       if (info.reflectType == 0) { // ground
-        
-//         vec3 point = info.pos;
-//         vec2 planePoint = planeMap(point);
-//         vec3 imageColor = texture2D(uRandomTexture1,planePoint).xyz;
-//         //c *= checker(pos.xz);
-//         c *= imageColor;
-//         dir = info.normal + random_in_unit_sphere();
-//       } else if (info.reflectType == 1) { // lambertian
-
-//         vec3 point = info.pos;
-//         vec2 spherePoint = sphericalMap(point);
-//         vec3 imageColor = texture2D(uRandomTexture1,spherePoint).xyz;
-//         c *= imageColor;
-//         dir = info.normal + random_in_unit_sphere();
-//       } else if (info.reflectType == 2) { // specular
-//         c *= uMetalColor;
-//         dir = normalize(reflect(dir, info.normal) + uFuzziness * random_in_unit_sphere());
-//         if (dot(info.normal, dir) < 0.0) break;
-//       } else if (info.reflectType == 3) { // dielectric
-//         vec3 n;
-//         float eta, cosine;
-//         if (dot(dir, info.normal) < 0.0) {
-//           n = info.normal;
-//           eta = 1.0 / uIndexOfRefraction;
-//           cosine = -dot(dir, info.normal) / length(dir);
-//         } else {
-//           n = -info.normal;
-//           eta = uIndexOfRefraction;
-//           cosine = uIndexOfRefraction * dot(dir, info.normal) / length(dir);
-//         }
-//         vec3 r = refract(normalize(dir), n, eta);
-//         dir = r == vec3(0.0) || random() < schlick(cosine, uIndexOfRefraction) ? reflect(dir, n) : r;
-//       }
-//     } else {
-//       c *= backgroundColor(dir);
-//       break;
-//     }
-//   }
-//   return c;
-// }
 
 void ray(in mat3 cam, in vec3 origin, in vec2 uv, in float vfov, in float aspect, inout vec3 rpos, inout vec3 rdir) {
   float theta = vfov * PI / 180.0;
@@ -844,6 +661,11 @@ float random(vec3 scale, float seed){return fract(sin(dot(gl_FragCoord.xyz + see
 // Main
 //============================================================================
 
+float rand_new(vec2 co){
+  return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+
 void main() {
 
   vec2 m = uMouse / uResolution.y;
@@ -854,12 +676,23 @@ void main() {
   vec3 pos = vec3(10.0 * cos(camAngle), uCameraHeight, 10.0 * sin(camAngle));
   vec3 tar = vec3(0.0, 0.0, 0.0);
   mat3 cam = camera(pos, tar, vec3(0.0, 1.0, 0.0));
+  
+
+       ///////////////////////////////////
+    // Distributed Ray tracing Stuff //
+    ///////////////////////////////////
+  
+  float image_dist = distance(pos, vec3(0.0, 0.7, 0.0));
+  float image_height = 2.0 * image_dist * tan(uFieldOfView / 2.0);
+  float image_width = image_height * uResolution.x / uResolution.y;
+  float pixel_width = image_width / uResolution.x;
+  vec3 image_origin = vec3(-image_width/2.0, -image_height/2.0, -image_dist);
 
   vec3 c = vec3(0.0);
 
   initScene();
 
-  const int SPP = 32;
+  
 
   vec2 pixel = gl_FragCoord.xy + random(gl_FragCoord.xy + float(1) * vec2(0.01));
   vec2 st = (2.0 * pixel - uResolution.xy) / uResolution.xy;
@@ -884,12 +717,46 @@ void main() {
     lights[0].position = lights[0].position  + lightPositon;
 
     ///////////////////////////////////
-    // Ray Tracing //
+    // Distributed Ray Tracing //
     ///////////////////////////////////
+
+  const int SPP = 32;
+  int sqrt_SPP = int(sqrt(float(SPP)));
 
   Ray nextRay;
   nextRay.origin = rpos;
   nextRay.direction = rdir;
+
+  //Random points for lights
+  vec2 light_points[SPP];
+  
+  //Probably change0
+  for(int i =0;i<SPP;i++){
+    light_points[i] = vec2(rand_new(gl_FragCoord.xy)*2.0-1.0,random()*2.0-1.0)/2.0;
+  }
+
+
+    //Fix loop
+  // for(int i=0;i<5;i++){
+  //   for(int j = 0 ;j<5;j++){
+  //     vec2 randPos = vec2(rand_new(gl_FragCoord.xy),random());
+  //     vec3 lensPos = vec3(randPos.x*uAperture,randPos.y*uAperture,0.0);
+  //     //calculate random pixel position perturbation
+  //     vec2 perturbation = vec2(float(i)*random()/float(5),float(j)*random()/float(5));
+  //     perturbation*=pixel_width;
+  //     vec3 pixel_pos = image_origin + vec3(pixel_width * gl_FragCoord.xy, 0);
+  //     pixel_pos.xy+=perturbation;
+  //     Ray pRay;
+  //     pRay.origin = pos;
+  //     pRay.origin += lensPos;
+
+  //     vec3 direction = vec3(cam_pos + pixel_pos.x * cam_x_axis + 
+  //                               pixel_pos.y * cam_y_axis  + 
+  //                               pixel_pos.z * cam_z_axis - pRay.o);
+  //   }
+  // }
+
+  
 
   HitInfo hit;
 
@@ -897,10 +764,6 @@ void main() {
 
   vec3 k_rg;
   
-       //  if(intersectPlane(planes[0],nextRay,DEFAULT_TMIN,DEFAULT_TMAX)){
-       //  vec2 uv = planeMap(hit.position);
-       //  iResult = texture2D(uRandomTexture1,uv).xyz;
-      // }
   for(int i=0 ; i<NUM_ITERATIONS;i++){
     
     vec3 compounded_k_rg = vec3( 1.0 );
@@ -908,10 +771,10 @@ void main() {
    
 
       vec3 iLocal =castRay(nextRay,hit,hasHit,k_rg);
-      if(hit.materialID==3){
-      	         vec2 uv = planeMap(hit.position);
-         iResult = texture2D(uRandomTexture1,uv).xyz;
-      }
+      // if(hit.materialID==3){
+      // 	         vec2 uv = planeMap(hit.position);
+      //    iResult = texture2D(uRandomTexture0,uv).xyz;
+      // }
 
       iResult += compounded_k_rg*iLocal;
       
@@ -922,23 +785,7 @@ void main() {
       nextRay.direction = normalize(reflect(nextRay.direction,hit.normal)); 
 
   }
-  // if(i==0)
-  //     {iResult = BACKGROUND_COLOR;}
-      
 
-
- 
-    // for (int i = 1; i <= 100; i++) {
-    //   vec2 pixel = gl_FragCoord.xy + random(gl_FragCoord.xy + float(i) * vec2(0.01));
-    //   vec2 st = (2.0 * pixel - uResolution.xy) / uResolution.xy;
-    //   vec3 rpos, rdir;
-    //   ray(cam, pos, st, uFieldOfView, uResolution.x / uResolution.y, rpos, rdir);
-    //   c += trace(rpos, rdir);
-    //   if (uSamples == i) break;
-    // }
-    // c /= float(uSamples < 100 ? uSamples : 100);
-
-    // c = pow(c, vec3(1.0 / 2.2));
 
     gl_FragColor = vec4( iResult, 1.0);
 }
@@ -1152,19 +999,18 @@ void main() {
         // glsl.setUniform('uFuzziness', '1f', props.fuzziness);
         // glsl.setUniform('uIndexOfRefraction', '1f', props.indexOfRefraction);
         // glsl.setUniform('uSamples', '1i', props.samples);
-        glsl.setTexture(
-          "uRandomTexture1",
-          "./textures/PavingStones115B_2K_Color.png",
-          0
-        );
+
+        glsl.setTexture("uRandomTexture0", "./textures/PavingStones115B_2K_Color.png");
         glsl.setUniform("uSphereX", "1f", props.sphereX);
         glsl.setUniform("uSphereY", "1f", props.sphereY);
         glsl.setUniform("uSphereZ", "1f", props.sphereZ);
         glsl.setUniform("uLightX", "1f", props.lightX);
         glsl.setUniform("uLightY", "1f", props.lightY);
         glsl.setUniform("uLightZ", "1f", props.lightZ);
-        //glsl.setTexture('uRandomTexture2', './textures/Wall_Plaster_002_BaseColor.jpg',1);
-
+        glsl.setTexture("uRandomTexture1", "./textures/broken_wall_diff_2k.jpg");
+        glsl.setTexture("uNormalTexture0", "./textures/PavingStones115B_2K_NormalGL.png");
+        glsl.setTexture("uNormalTexture1", "./textures/broken_wall_nor_gl_2k.png");
+        glsl.setTexture("uSphereMap", "./textures/autumn_forest_04_2k.png");
         glsl.start();
       });
     </script>

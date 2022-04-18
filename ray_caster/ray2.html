@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Ray Tracing Based on "Ray Tracing in One Weekend"</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" ></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.5/dat.gui.min.js"></script>
+    <script src="glsl.js"></script>
+    <script>
+      function addColorToGui(gui, props, name, func, scope) {
+        const controller = gui.addColor(props, name);
+        controller.onChange(func.bind(scope));
+      }
+
+      function addToGui(gui, props, name, func, scope, min, max, step) {
+        const controller = gui.add(props, name, min, max, step);
+        controller.onChange(func.bind(scope));
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        const glsl = new GLSL({
+          canvasId: "canvas",
+          fragmentShaderSource: 
+          
+/*glsl*/ `#version 300 es
+precision highp float;
+
+
+
+//============================================================================
+//uniforms.
+//============================================================================
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform vec2 uMouse;
+uniform bool uMousePressed;
+
+uniform float uCameraPosition;
+uniform float uCameraHeight;
+uniform float uFieldOfView;
+uniform float uFocus;
+uniform float uAperture;
+//uniform vec3 uGroundColor1;
+//uniform vec3 uGroundColor2;
+uniform vec3 uSkyTopColor;
+uniform vec3 uSkyBottomColor;
+uniform vec3 uLambertianColor;
+uniform vec3 uMetalColor;
+uniform float uFuzziness;
+uniform float uIndexOfRefraction;
+uniform int uSamples;
+uniform sampler2D uRandomTexture;
+uniform sampler2D uRandomTexture0;
+uniform sampler2D uRandomTexture1;
+uniform sampler2D uNormalTexture0;
+uniform sampler2D uNormalTexture1;
+uniform sampler2D uSphereMap;
+uniform float uSphereX;
+uniform float uSphereY;
+uniform float uSphereZ;
+
+uniform float uLightX;
+uniform float uLightY;
+uniform float uLightZ;
+
+out vec4 fragmentColor;
+
+//============================================================================
+// Constants.
+//============================================================================
+
+
+#define MAX_FLOAT 3.402823466e+38
+#define AA_NUM_SAMPLES 16
+#define MAX_RANDOM_ITERATIONS 3
+#define RAY_BOUNCES 10
+#define SPHERE_NUMBER 2
+#define PLANE_NUMBER 1
+
+#define PI 3.1415926538
+#define TWO_PI 6.28318530718
+
+#define LAMBERTIAN 0
+#define METAL 1
+#define DIELECTRIC 2
+#define LIGHT 3
+
+//============================================================================
+// Structs
+//============================================================================
+
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
+
+struct Material {
+
+    uint type;
+    vec3 albedo;
+    float fuzzyness;
+    float refractionIndex;
+    vec3 emission;
+
+};
+
+struct HitRecord {
+    float t;
+    vec3 p;
+    vec3 normal;
+    Material material;
+    float u;
+    float v;
+};
+
+struct Sphere {
+    vec3 center;
+    float radius;
+    Material material;
+};
+
+struct Plane{
+  Material material;
+  float A,B,C,D;
+};
+
+struct Camera {
+
+    vec3 origin;
+    vec3 lowerLeftCorner;
+    vec3 horizontal;
+    vec3 vertical;
+    float lensRadius;
+    vec3 u, v, w;
+
+};
+
+struct Rectangle{
+  float z1,x1,z2,x2,y;
+  Material material;
+};
+
+
+//============================================================================
+// Random 
+//============================================================================
+
+float random (vec2 st) {
+    return fract(sin(dot(st.xy,
+        vec2(12.9898,78.233)))*
+        43758.5453123);
+}
+
+float squaredLength(vec3 v) {
+    return dot(v, v);
+}
+
+vec3 randomPointInUnitSphere(vec3 pos) {
+    vec3 p;
+    int iters = 0;
+    do {
+        p = vec3(random(pos.xy), random(pos.yz), random(pos.xz));
+        iters++;
+    } while((squaredLength(p) >= 1.0) && iters < MAX_RANDOM_ITERATIONS);
+    return p;
+
+}
+
+vec3 randomPointInUnitDisk(vec3 pos) {
+
+    vec3 p;
+    do {
+        p = 2.0 * vec3(random(pos.xy), random(pos.yz), 0.0) - vec3(1.0, 1.0, 0.0);
+    } while((squaredLength(p) >= 1.0));
+
+    return p;
+
+}
+
+
+
+int ranIndex(){
+  return int(gl_FragCoord.x * fract(sin(dot(gl_FragCoord.xy * 0.01, vec2(19.342, 54.342)) * 3244.4234)) * 256.0 * 256.0);
+}
+
+
+vec2 randompos() {
+  int randomindex;
+  randomindex = ranIndex();
+  int h = randomindex / 256;
+  int w = randomindex  - h * 256;
+  return vec2(float(w) / 256.0, float(h) / 256.0);
+}
+
+vec3 random3() {
+  int randomindex;
+  randomindex = ranIndex();
+
+  randomindex += 1;
+  return texture(uRandomTexture, randompos()).xyz;
+}
+
+vec2 random2() {
+  return random3().xy;
+}
+
+float random() {
+  return random3().x;
+}
+
+
+
+vec3 randomCosineHemisphere() {
+  float r1 = random();
+  float r2 = random();
+  float z = sqrt(1.0 - r2);
+  float phi = TWO_PI * r1;
+  float x = cos(phi) * sqrt(r2);
+  float y = sin(phi) * sqrt(r2);
+  return vec3(x, y, z);
+}
+
+mat3 orthonormal(in vec3 z) {
+  vec3 w = normalize(z);
+  vec3 u = normalize(cross(w, abs(w.x) > 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
+  vec3 v = normalize(cross(u, w));
+  return mat3(u, v, w);
+}
+
+float cosinePdfValue(in HitRecord info, in vec3 dir) {
+  float c = dot(normalize(dir), info.normal);
+  return c > 0.0 ? c / PI : 0.0;
+}
+
+vec3 cosinePdfDir(in HitRecord info) {
+  return orthonormal(info.normal) * randomCosineHemisphere();
+}
+
+
+//============================================================================
+// Camera 
+//============================================================================
+
+mat3 camera(in vec3 pos, in vec3 tar, in vec3 up) {
+  vec3 cz = normalize(tar - pos);
+  vec3 cx = normalize(cross(cz, normalize(up)));
+  vec3 cy = normalize(cross(cx, cz));
+  return mat3(cx, cy, cz);
+}
+
+void ray(in mat3 cam, in vec3 origin, in vec2 uv, in float vfov, in float aspect, inout vec3 rpos, inout vec3 rdir) {
+  float theta = vfov * PI / 180.0;
+  float h = tan(theta / 2.0);
+  float w = h * aspect;
+  //vec3 offset = cam * random3() * uAperture;
+  rpos = origin;
+  rdir = normalize(origin + cam * uFocus * vec3(w * uv.x, h * uv.y, 1.0) - rpos);
+}
+
+vec3 rayAtDistance(Ray r, float distance) {
+    return r.origin + r.direction * distance;
+}
+
+//============================================================================
+// Plane
+//============================================================================
+
+vec2 planeMap(vec3 point){
+  vec3 normal = vec3(0.0, 1.0, 0.0);
+  vec3 u = normalize(vec3(normal.y,-normal.x,0));
+  vec3 v = cross(normal,u);
+  float hu = dot(u,point);
+  float hv = dot(v,point);
+  return vec2(hu,hv);
+}
+
+bool hitPlane( Plane pln, Ray ray,
+                     float tmin, float tmax,
+                     out HitRecord hit)
+{
+    vec3 N = vec3( pln.A, pln.B, pln.C );
+    float NRd = dot( N, ray.direction );
+    float NRo = dot( N,  ray.origin );
+    float t0 = (-pln.D - NRo) / NRd;
+    if ( t0 < tmin || t0 > tmax ) return false;
+
+    // We have a hit -- output results.
+    
+    hit.p = ray.origin + t0 * ray.direction;
+    hit.normal = normalize( N );
+    hit.t = t0;
+    hit.material = pln.material;
+
+    vec2 uv = planeMap(ray.origin + t0 * ray.direction);
+    hit.u = uv.x;
+    hit.v = uv.y;
+
+    return true;
+}
+
+//============================================================================
+// Reactangular Light
+//============================================================================
+
+bool rectangleHit(Rectangle rect,Ray r,float tMin,float tMax,out HitRecord hit) {
+
+  float t = (rect.y - r.origin.y)/r.direction.y;
+  vec3  p = r.origin + t*r.direction;
+
+  if(t< tMin || t>tMax ||p.z <rect.z1 || p.z > rect.z2 || p.x < rect.x1 || p.x > rect.x2)return false;
+
+  hit.t = t;
+  hit.p = p;
+  hit.normal = vec3(0.0,1.0,0.0);
+  hit.material = rect.material;
+  return true; 
+}
+
+float lightPdfValue(in HitRecord info, in vec3 dir,Rectangle rect) {
+  Ray ray = Ray(info.p, dir);
+  HitRecord hi;
+ 
+  float t = 1000.0;
+  if (rectangleHit(rect,ray, 0.001, t, hi)) {
+    float area = 4.0 * 4.0;
+    float d2 = pow(length(dir) * 2.0, 2.0);
+    float cosine = abs(dot(dir, hi.normal)) / length(dir);
+    return d2 / (cosine * area);
+  }
+  return 0.0;
+}
+
+vec3 lightPdfDir(in HitRecord info) {
+  vec3 onLight = vec3(-0.3 + 0.6 * random(), 0.999, -0.3 + 0.6 * random());
+  vec3 toLight = onLight - info.p;
+  float dist = dot(toLight, toLight);
+  toLight = normalize(toLight);
+  vec3 dir = toLight;
+  return dir;
+}
+
+float mixPdfValue(in HitRecord info, in vec3 dir,Rectangle rect) {
+  return (1.0 - 0.1) * cosinePdfValue(info, dir) + 0.1 * lightPdfValue(info, dir,rect);
+}
+
+vec3 mixPdfDir(in HitRecord info) {
+  return random() < 0.1 ? lightPdfDir(info) : cosinePdfDir(info);
+}
+
+//============================================================================
+// Sphere
+//============================================================================
+
+bool hitSphere(Sphere s, Ray r, float tMin, float tMax, out HitRecord hit) {
+
+    vec3 oc = r.origin - s.center;
+    float a = dot(r.direction, r.direction);
+    float b = dot(oc, r.direction);
+    float c = dot(oc, oc) - s.radius*s.radius;
+    float discriminant = b*b - a*c;
+    bool hasHit = (discriminant > 0.0);
+    bool inRange = false;
+
+    if(hasHit) {
+        float sqrtDiscriminant = sqrt(discriminant);
+        float t = (-b - sqrtDiscriminant) / a;
+        inRange = tMin < t && t < tMax;
+
+        if(!inRange) {
+            t = (-b + sqrtDiscriminant) / a;
+            inRange = tMin < t && t < tMax;
+        }
+
+        if(inRange) {
+            hit.t = t;
+            hit.p = rayAtDistance(r, t);
+            hit.normal = (hit.p - s.center) / s.radius;
+            hit.material = s.material;
+        }
+    }
+
+    return hasHit && inRange;
+}
+
+
+//============================================================================
+// Hit
+//============================================================================
+
+bool hitList(Sphere[SPHERE_NUMBER] spheres,Plane[PLANE_NUMBER] planes, Rectangle rect, Ray r, float tMin, float tMax, out HitRecord hit) {
+
+    HitRecord temp;
+    bool hitAnything = false;
+    float closest = tMax;
+
+    //Light
+    if(rectangleHit(rect,r,tMin,tMax,temp)){
+      hitAnything = true;
+      closest = temp.t;
+      hit = temp;
+    }
+    
+    for(int i=0; i<planes.length();i++){
+      if(hitPlane(planes[i],r,tMin,closest,temp)){
+        hitAnything = true;
+        closest = temp.t;
+        hit = temp;
+      }
+    }
+
+    for(int i=0; i<spheres.length(); ++i) {
+
+        if(hitSphere(spheres[i], r, tMin, closest, temp)) {
+
+            hitAnything = true;
+            closest = temp.t;
+            hit = temp;
+        }
+    }
+    return hitAnything;
+
+}
+
+//============================================================================
+// Materials
+//============================================================================
+
+float minus2Positive(float value) {
+    return 0.5 * (value + 1.0);
+}
+
+vec3 minus2Positive(vec3 vec) {
+    return vec3(minus2Positive(vec.x), minus2Positive(vec.y), minus2Positive(vec.z));
+}
+
+bool lambertianScatter(Ray rayIn,out HitRecord rec, out vec3 attenuation, out Ray scatteredRay) {
+
+    vec3 target = rec.p + rec.normal;
+    scatteredRay = Ray(rec.p, target - rec.p);
+    //attenuation = rec.material.albedo;
+    vec2 uv = vec2(rec.u,rec.v);
+    vec3 temp = texture(uRandomTexture1,uv).xyz;
+    attenuation = temp;
+    
+    return true;
+
+}
+
+bool metalScatter(Ray rayIn,out HitRecord rec, out vec3 attenuation, out Ray scatteredRay) {
+    
+    vec3 reflected = reflect(normalize(rayIn.direction), rec.normal);
+    scatteredRay = Ray(rec.p, reflected );
+    attenuation = rec.material.albedo;
+    return (dot(scatteredRay.direction, rec.normal) > 0.0);
+}
+
+float schlick(float cosine, float refractionIndex) {
+
+    float r0 = (1.0 - refractionIndex) / (1.0 + refractionIndex);
+    r0 = r0*r0;
+    return r0 * (1.0 - r0)*pow((1.0 - cosine), 5.0);
+
+}
+
+bool dielectricScatter(Ray rayIn,out HitRecord rec, out vec3 attenuation, out Ray scatteredRay) {
+
+    vec3 outwardNormal;
+    float niOverNt;
+    vec3 refracted;
+    float reflectProbability = 1.0;
+    float cosine;
+    vec3 reflected = reflect(rayIn.direction, rec.normal);
+
+    attenuation = vec3(1.0);
+    if(dot(rayIn.direction, rec.normal) > 0.0) {
+
+        outwardNormal = -rec.normal;
+        niOverNt = rec.material.refractionIndex;
+        cosine = rec.material.refractionIndex * dot(rayIn.direction, rec.normal) / length(rayIn.direction);
+
+    } else {
+
+        outwardNormal = rec.normal;
+        niOverNt = 1.0 / rec.material.refractionIndex;
+        cosine = -dot(rayIn.direction, rec.normal) / length(rayIn.direction);
+    }
+    refracted = refract(normalize(rayIn.direction), normalize(outwardNormal), niOverNt);
+    bool isRefracted = refracted.x != 0.0 || refracted.y != 0.0 || refracted.z != 0.0;
+
+    if(isRefracted) {
+        reflectProbability = schlick(cosine, rec.material.refractionIndex);
+    }
+    if(random(rec.p.xy) < reflectProbability) {
+        scatteredRay = Ray(rec.p, reflected);
+    } else {
+        scatteredRay = Ray(rec.p, refracted);
+    }
+
+    return true;
+
+}
+
+
+//============================================================================
+// Lighting
+//============================================================================
+
+vec3 color(in Ray r, Sphere[SPHERE_NUMBER] world , Plane[PLANE_NUMBER] worldPlane,Rectangle rect) {
+
+  
+  bool hasFinished = false;
+  Ray currentRay = r;
+  
+  vec3 color = vec3(1.0);
+
+  for(int bounce = 0; bounce < RAY_BOUNCES; bounce++) {
+    HitRecord rec;
+    if(hitList(world,worldPlane, rect,r,0.001, MAX_FLOAT, rec)) {
+        bool keepBouncing = false;
+        vec3 materialAttenuation = vec3(1.0);
+        Ray scatteredRay = currentRay;
+           
+        if(rec.material.type == uint(LAMBERTIAN)) {
+            keepBouncing = lambertianScatter(r, rec, materialAttenuation, scatteredRay);
+            vec3 normal = dot(r.direction, rec.normal) < 0.0 ? rec.normal : -rec.normal;
+            rec.normal = normal;
+            vec3 dir = mixPdfDir(rec);
+            float p = mixPdfValue(rec, dir,rect);
+            if(p<0.0) return vec3(0.0);
+            color = color*materialAttenuation* dot(rec.normal, dir) / (PI * p);
+            scatteredRay.origin = rec.p;
+            scatteredRay.direction = dir;
+            currentRay = scatteredRay;
+            r = Ray(rec.p, dir);  
+
+        } else if(rec.material.type == uint(METAL)) {
+            vec3 normal = dot(r.direction, rec.normal) < 0.0 ? rec.normal : -rec.normal;
+            keepBouncing = metalScatter(r, rec, materialAttenuation, scatteredRay);
+            currentRay = scatteredRay;
+            r = Ray(rec.p, reflect(r.direction, normal));
+
+        } else if(rec.material.type == uint(DIELECTRIC)) {
+            keepBouncing = dielectricScatter(r, rec, materialAttenuation, scatteredRay);
+            currentRay = scatteredRay;
+            r = scatteredRay;
+          }
+        else if(rec.material.type == uint(LIGHT)){
+
+            color *= dot(rec.normal, r.direction) > 0.0 ? rec.material.emission : vec3(0.0);
+            return color;
+            // if(dot(rec.normal,scatteredRay.direction)>0.0){
+            //   color = color*rect.material.emission;
+            //   return color;
+            // }else{
+            //   color = color*vec3(0.0);
+            //   return color;
+            // }  
+        }
+        // if(keepBouncing) {
+        //     currentRay = scatteredRay;
+        //     attenuation *= materialAttenuation;
+        // } else {
+        //   color = vec3(0.0);
+        //   hasFinished = true;
+        // }
+    } else {
+        return vec3(0.0);
+    }
+  }
+
+  return vec3(0.0);
+
+}
+
+//============================================================================
+// Scene
+//============================================================================
+
+Sphere[SPHERE_NUMBER] sceneSpheres() {
+
+    Sphere world[SPHERE_NUMBER];
+
+    //world[0] = Sphere(vec3(0.0, -1000.0, 0.0), 1000.0, Material(uint(LAMBERTIAN), vec3(0.5, 0.5, 0.5), 0.0, 0.0));
+    int index = 0;
+    world[index++] = Sphere(vec3(0.0, 3.0, 5.0), 2.0, Material(uint(DIELECTRIC), vec3(0.0, 0.0, 0.0), 0.0, 1.5,vec3(0.0)));
+    //world[index++] = Sphere(vec3(0.0, 2.0, 5.0), 2.0, Material(uint(LAMBERTIAN), vec3(0.4, 0.2, 0.1), 0.0, 0.0));
+    world[index++] = Sphere(vec3(0.0, 3.0, -5.0), 2.0, Material(uint(METAL), vec3(0.7, 0.6, 0.5), 0.0, 0.0,vec3(0.0)));
+
+    return world;
+
+}
+
+Plane[PLANE_NUMBER] scenePlanes(){
+  Plane planes[PLANE_NUMBER];
+
+  planes[0].A = 0.0;
+  planes[0].B = 1.0;
+  planes[0].C = 0.0;
+  planes[0].D = 0.0;
+  planes[0].material = Material(uint(LAMBERTIAN), vec3(0.9, 0.9, 0.98), 0.0, 0.0,vec3(0.0));
+
+  return planes;
+}
+
+
+Rectangle sceneRectangle(){
+
+  Material light;
+  light.type = uint(LIGHT);
+  light.albedo = vec3(1.0);
+  light.emission = vec3(1.0);
+
+  Rectangle rect;
+  rect.z1 = -2.0;
+  rect.x1 = -2.0;
+  rect.z2 = 2.0;
+  rect.x2 = 2.0;
+  rect.y = 7.0;
+  rect.material = light;
+
+  return rect;
+}
+
+
+//============================================================================
+// Main
+//============================================================================
+
+void main(void) {
+
+    vec2 m = uMouse / uResolution.y;
+   
+    // float randX = random((gl_FragCoord.xy)/uResolution.xy);
+    // float randY = random((gl_FragCoord.yx)/uResolution.yx);
+    // float randZ = random((gl_FragCoord.xy)/uResolution.yx);
+
+    float camAngle = uCameraPosition * PI / 180.0;
+    vec3 pos = vec3(10.0 * cos(camAngle), uCameraHeight, 10.0 * sin(camAngle));
+    vec3 tar = vec3(0.0, 0.0, 0.0);
+    mat3 cam = camera(pos, tar, vec3(0.0, 1.0, 0.0));
+
+    // vec2 pixel = gl_FragCoord.xy + random(gl_FragCoord.xy + float(1) * vec2(0.01));
+    // vec2 st = (2.0 * pixel - uResolution.xy) / uResolution.xy;
+
+
+    Sphere[SPHERE_NUMBER] world = sceneSpheres();
+    Plane[PLANE_NUMBER] planes = scenePlanes();
+    Rectangle rect = sceneRectangle();
+
+    vec3 col = vec3(0.0, 0.0, 0.0);
+
+    for(int i=0; i<20; i++) {
+        // float randX = random((gl_FragCoord.xy + float(i))/uResolution.xy);
+        // float randY = random((gl_FragCoord.yx + float(i))/uResolution.yx);
+        // float randZ = random((gl_FragCoord.xy + float(i))/uResolution.yx);
+
+        vec2 uv = gl_FragCoord.xy + random2();
+        vec2 st = (uv * 2.0 - uResolution) / uResolution.y;
+
+        vec3 rpos, rdir;
+        ray(cam, pos, st, uFieldOfView, uResolution.x / uResolution.y, rpos, rdir);
+        Ray r;
+        r.origin = rpos;
+        r.direction = rdir;
+        col += color(r, world,planes,rect);
+
+    }
+
+    col = pow(col, vec3(1.0 / 2.2));
+    fragmentColor = vec4(col, 1.0);
+}
+        `,
+        });
+
+        const props = {
+          cameraPosition: 0.0,
+          cameraHeight: 4.0,
+          fieldOfView: 90.0,
+          focus: 10.0,
+          aperture: 0.0,
+          groundColor1: [0, 0, 0],
+          groundColor2: [255, 255, 255],
+          skyTopColor: [128, 128, 255],
+          skyBottomColor: [255, 255, 255],
+          lambertianColor: [220, 100, 100],
+          metalColor: [255, 255, 255],
+          fuzziness: 0.0,
+          indexOfRefraction: 1.5,
+          samples: 20,
+          animation: true,
+          sphereX: 0.0,
+          sphereY: 0.0,
+          sphereZ: 0.0,
+          lightX: 0.0,
+          lightY: 0.0,
+          lightZ: 0.0,
+        };
+
+        const gui = new dat.GUI();
+        const guiCamera = gui.addFolder("Camera");
+        addToGui(
+          guiCamera,
+          props,
+          "cameraPosition",
+          function (v) {
+            glsl.setUniform("uCameraPosition", "1f", v);
+          },
+          this,
+          -360,
+          360
+        );
+        addToGui(
+          guiCamera,
+          props,
+          "cameraHeight",
+          function (v) {
+            glsl.setUniform("uCameraHeight", "1f", v);
+          },
+          this,
+          0.0,
+          10.0
+        );
+        addToGui(
+          guiCamera,
+          props,
+          "fieldOfView",
+          function (v) {
+            glsl.setUniform("uFieldOfView", "1f", v);
+          },
+          this,
+          0,
+          180
+        );
+        addToGui(
+          guiCamera,
+          props,
+          "focus",
+          function (v) {
+            glsl.setUniform("uFocus", "1f", v);
+          },
+          this,
+          5,
+          25
+        );
+        addToGui(
+          guiCamera,
+          props,
+          "aperture",
+          function (v) {
+            glsl.setUniform("uAperture", "1f", v);
+          },
+          this,
+          0.0,
+          1.0
+        );
+
+        const guiSphere = gui.addFolder("Sphere Position");
+        addToGui(
+          guiSphere,
+          props,
+          "sphereX",
+          function (v) {
+            glsl.setUniform("uSphereX", "1f", v);
+          },
+          this,
+          -5.0,
+          5.0
+        );
+        addToGui(
+          guiSphere,
+          props,
+          "sphereY",
+          function (v) {
+            glsl.setUniform("uSphereY", "1f", v);
+          },
+          this,
+          -5.0,
+          5.0
+        );
+        addToGui(
+          guiSphere,
+          props,
+          "sphereZ",
+          function (v) {
+            glsl.setUniform("uSphereZ", "1f", v);
+          },
+          this,
+          -10.0,
+          10.0
+        );
+
+        const guiLight = gui.addFolder("Light Position");
+        addToGui(
+          guiLight,
+          props,
+          "lightX",
+          function (v) {
+            glsl.setUniform("uLightX", "1f", v);
+          },
+          this,
+          -10.0,
+          10.0
+        );
+        addToGui(
+          guiLight,
+          props,
+          "lightY",
+          function (v) {
+            glsl.setUniform("uLightY", "1f", v);
+          },
+          this,
+          -10.0,
+          10.0
+        );
+        addToGui(
+          guiLight,
+          props,
+          "lightZ",
+          function (v) {
+            glsl.setUniform("uLightZ", "1f", v);
+          },
+          this,
+          -10.0,
+          10.0
+        );
+
+        // const guiGround = gui.addFolder('Ground');
+        // addColorToGui(guiGround, props, 'groundColor1', function(v) {
+        //   glsl.setUniform('uGroundColor1', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
+        // }, this);
+        // addColorToGui(guiGround, props, 'groundColor2', function(v) {
+        //   glsl.setUniform('uGroundColor2', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
+        // }, this);
+        // const guiSky = gui.addFolder('Sky');
+        // addColorToGui(guiSky, props, 'skyTopColor', function(v) {
+        //   glsl.setUniform('uSkyTopColor', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
+        // }, this);
+        // addColorToGui(guiSky, props, 'skyBottomColor', function(v) {
+        //   glsl.setUniform('uSkyBottomColor', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
+        // }, this);
+        // const guiLambertianSphere = gui.addFolder('Lambertian Sphere');
+        // addColorToGui(guiLambertianSphere, props, 'lambertianColor', function(v) {
+        //   glsl.setUniform('uLambertianColor', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
+        // }, this);
+        // const guiMetalSphere = gui.addFolder('Metal Sphere');
+        // addColorToGui(guiMetalSphere, props, 'metalColor', function(v) {
+        //   glsl.setUniform('uMetalColor', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
+        // }, this);
+        // addToGui(guiMetalSphere, props, 'fuzziness', function(v) {
+        //   glsl.setUniform('uFuzziness', '1f', v);
+        // }, this, 0.0, 1.0);
+        // const guiDielectricSphere = gui.addFolder('Dielectric Sphere');
+        // addToGui(guiDielectricSphere, props, 'indexOfRefraction', function(v) {
+        //   glsl.setUniform('uIndexOfRefraction', '1f', v);
+        // }, this, 1.0, 3.0);
+        // addToGui(gui, props, 'samples', function(v) {
+        //   glsl.setUniform('uSamples', '1i', v);
+        // }, this, 1, 100);
+        var funcToStartOrStopAnimation = function (v) {
+          if (v && !glsl.isAnimating()) {
+            glsl.start();
+          } else if (!v && glsl.isAnimating()) {
+            glsl.stop();
+          }
+        };
+        addToGui(gui, props, "animation", funcToStartOrStopAnimation, this);
+
+        glsl.setUniform("uCameraPosition", "1f", props.cameraPosition);
+        glsl.setUniform("uFieldOfView", "1f", props.fieldOfView);
+        glsl.setUniform("uCameraHeight", "1f", props.cameraHeight);
+        glsl.setUniform("uFocus", "1f", props.focus);
+        glsl.setUniform("uAperture", "1f", props.aperture);
+        //glsl.setUniform('uGroundColor1', '3fv', [props.groundColor1[0] / 255.0, props.groundColor1[1] / 255.0, props.groundColor1[2] / 255.0]);
+        //glsl.setUniform('uGroundColor2', '3fv', [props.groundColor2[0] / 255.0, props.groundColor2[1] / 255.0, props.groundColor2[2] / 255.0]);
+        // glsl.setUniform('uSkyTopColor', '3fv', [props.skyTopColor[0] / 255.0, props.skyTopColor[1] / 255.0, props.skyTopColor[2] / 255.0]);
+        // glsl.setUniform('uSkyBottomColor', '3fv', [props.skyBottomColor[0] / 255.0, props.skyBottomColor[1] / 255.0, props.skyBottomColor[2] / 255.0]);
+        // glsl.setUniform('uLambertianColor', '3fv', [props.lambertianColor[0] / 255.0, props.lambertianColor[1] / 255.0, props.lambertianColor[2] / 255.0]);
+        // glsl.setUniform('uMetalColor', '3fv', [props.metalColor[0] / 255.0, props.metalColor[1] / 255.0, props.metalColor[2] / 255.0]);
+        // glsl.setUniform('uFuzziness', '1f', props.fuzziness);
+        // glsl.setUniform('uIndexOfRefraction', '1f', props.indexOfRefraction);
+        // glsl.setUniform('uSamples', '1i', props.samples);
+
+        glsl.setTexture("uRandomTexture0", "./textures/PavingStones115B_2K_Color.png");
+        glsl.setUniform("uSphereX", "1f", props.sphereX);
+        glsl.setUniform("uSphereY", "1f", props.sphereY);
+        glsl.setUniform("uSphereZ", "1f", props.sphereZ);
+        glsl.setUniform("uLightX", "1f", props.lightX);
+        glsl.setUniform("uLightY", "1f", props.lightY);
+        glsl.setUniform("uLightZ", "1f", props.lightZ);
+        glsl.setTexture("uRandomTexture", "./textures/rgb_noise.bmp");
+        glsl.setTexture("uRandomTexture1", "./textures/broken_wall_diff_2k.jpg");
+        glsl.setTexture("uNormalTexture0", "./textures/PavingStones115B_2K_NormalGL.png");
+        glsl.setTexture("uNormalTexture1", "./textures/broken_wall_nor_gl_2k.png");
+        glsl.setTexture("uSphereMap", "./textures/autumn_forest_04_2k.png");
+        glsl.start();
+      });
+    </script>
+  </body>
+</html>

@@ -107,8 +107,8 @@ void main() {
    */
   function GLSL(options) {
     this.canvas = document.getElementById(options.canvasId);
-    //canvas.width = window.innerWidth;
-    //canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
     window.addEventListener('resize', (function() {
       this.canvas.width = window.innerWidth;

@@ -5,6 +5,7 @@ const GLSL = (function() {
   precision highp float;
 
 in vec3 aPosition;
+out vec4 vPosition;
 
 uniform float uTime;
 uniform vec2 uResolution;
@@ -12,7 +13,9 @@ uniform vec2 uMouse;
 uniform bool uMousePressed;
 
 void main() {
+  vPosition = vec4(aPosition, 1.0);;
   gl_Position = vec4(aPosition, 1.0);
+  gl_Position.z = 1.0;
 }`;
 
   const VERTEX_POSITION = [
@@ -22,6 +25,14 @@ void main() {
      1.0, -1.0,  0.0
   ];
 
+  const CUBE_VERTEX = [
+    -1,-1,
+     1,-1,
+    -1, 1,
+    -1, 1,
+     1,-1,
+     1, 1
+  ];
   /**
    * creates a shader
    * @param [WebGLRenderingContext] gl
@@ -100,6 +111,10 @@ void main() {
     gl.enableVertexAttribArray(attribute.location);
     gl.vertexAttribPointer(attribute.location, attribute.size, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  }
+
+  function cube(gl){
+    
   }
 
   /**
@@ -202,6 +217,9 @@ void main() {
     this.gl.uniform2fv(this.gl.getUniformLocation(this.program, 'uResolution'), [canvas.width, canvas.height]);
     this.gl.uniform2fv(this.gl.getUniformLocation(this.program, 'uMouse'), this.mouse);
     this.gl.uniform1i(this.gl.getUniformLocation(this.program, 'uMousePressed'), this.mousePressed);
+
+    
+
     Object.keys(this.uniforms).forEach(function(name) {
       const type = this.uniforms[name].type;
       const value = this.uniforms[name].value;

@@ -1,389 +1,352 @@
+version 300 es
 
-precision mediump float;
+		precision mediump float;
+		
+		struct Sphere {
+		    vec3 position;
+		    float radius;
+		    int materialId;
+		};
 
-uniform float uTime;
-uniform vec2 uResolution;
-uniform vec2 uMouse;
-uniform bool uMousePressed;
+		struct LightSource {
+		    vec3 position;
+		    vec3 color;
+		};
 
-uniform sampler2D uRandomTexture;
-uniform vec3 uWallTop;
-uniform vec3 uWallBottom;
-uniform vec3 uWallRight;
-uniform vec3 uWallLeft;
-uniform vec3 uWallBack;
-uniform vec3 uLambertian;
-uniform vec3 uLightColor;
-uniform float uLightIntensity;
-uniform float uSamplelight;
-uniform float uIndexOfRefraction;
-uniform int uSamples;
+		struct Material {
+		    vec3 diffuse;
+		    vec3 specular;
+		    float shininess;
+		    float refractionCoeff;
+		    float refractionIndex;
+		};
 
-#define PI 3.14159265359
-#define TWO_PI 6.28318530718
+		const int maxArraySize = 64;
+		uniform Sphere spheres[maxArraySize];
+		uniform LightSource lightSources[maxArraySize];
+		uniform Material materials[maxArraySize];
 
-#define REFLECT_LAMBERTIAN 1
-#define REFLECT_SPECULAR 2
-#define REFLECT_DIELECTRIC 3
-#define REFLECT_LIGHT 4
+		uniform int numOfSpheres;
+		uniform int numOfLightSources;
 
-struct SurfaceInfo {
-  int reflectType;
-  vec3 attenuation;
-  vec3 emission;
-};
+		uniform vec3 ambientLight;
+		uniform vec3 backgroundColor;
+		uniform int maxRecursionDepth;		
 
-struct HitInfo {
-  vec3 pos;
-  vec3 normal;
-  SurfaceInfo surfaceInfo;
-};
+		bool intersectSphere(Sphere sphere, vec3 startPoint, vec3 ray, out float intersectionDistance) {
+		    vec3 v = startPoint - sphere.position;
+		    float d = dot(v, ray);
+		    float discriminant = d * d - (dot(v, v) - sphere.radius * sphere.radius);
+		    if (discriminant < 0.0) {
+		        return false;
+		    }
 
-struct Ray {
-  vec3 origin;
-  vec3 dir;
-};
+		    float sq = sqrt(discriminant);
+		    float t1 = -d + sq;
+		    float t2 = -d - sq;
 
+		    float t = 0.0;
+		    float epsilon = 1e-3;
+		    if (t1 < epsilon) {
+		        if (t2 < epsilon) {
+		            return false;
+		        }
+		        else {
+		            t = t2;
+		        }
+		    } else if (t2 < epsilon) {
+		        t = t1;
+		    } else {
+		        t = (t1 > t2) ? t2 : t1;
+		    }
 
-int randomindex;
-SurfaceInfo wTop, wBottom, wRight, wLeft, wBack, lambertian, specular, dielectric, light;
-void initialize() {
-  randomindex = int(gl_FragCoord.x * fract(sin(dot(gl_FragCoord.xy * 0.01, vec2(19.342, 54.342)) * 3244.4234)) * 256.0 * 256.0);
+		    intersectionDistance = t;
+		    return true;
+		}
 
-  wTop = SurfaceInfo(REFLECT_LAMBERTIAN, uWallTop, vec3(0.0));
-  wBottom = SurfaceInfo(REFLECT_LAMBERTIAN, uWallBottom, vec3(0.0));
-  wRight = SurfaceInfo(REFLECT_LAMBERTIAN, uWallRight, vec3(0.0));
-  wLeft = SurfaceInfo(REFLECT_LAMBERTIAN, uWallLeft, vec3(0.0));
-  wBack = SurfaceInfo(REFLECT_LAMBERTIAN, uWallBack, vec3(0.0));
-  lambertian = SurfaceInfo(REFLECT_LAMBERTIAN, uLambertian, vec3(0.0));
-  specular = SurfaceInfo(REFLECT_SPECULAR, vec3(0.0), vec3(0.0));
-  dielectric = SurfaceInfo(REFLECT_DIELECTRIC, vec3(0.0), vec3(0.0));
-  light = SurfaceInfo(REFLECT_LIGHT, vec3(0.0), uLightColor * uLightIntensity);
-}
+		int getIntersection(vec3 startPoint, vec3 ray, out vec3 closestIntersectionPoint) {
+		    int closestObject = -1;
+		    float minDistance = 1e+8;
+		    for (int i = 0; i < numOfSpheres; i++) {
+		        float intersectionDistance;
+		        if (intersectSphere(spheres[i], startPoint, ray, intersectionDistance)) {
+		            if (intersectionDistance < minDistance) {
+		                closestObject = i;               
+		                minDistance = intersectionDistance;
+		            }
+		        }
+		    }
+		    if (closestObject != -1) {
+		        closestIntersectionPoint = startPoint + minDistance * ray;
+		    }
+		    return closestObject;
+		}
 
-vec3 at(in Ray ray, in float t) {
-  return ray.origin + t * ray.dir;
-}
+		vec3 shade(Material mat, vec3 lightColor, vec3 normal, vec3 reflected, vec3 toLight, vec3 toViewer) {
+		    float diffuseCoeff = max(dot(toLight, normal), 0.0);
+		    float specularCoeff = 0.0;
+		    if (diffuseCoeff > 0.0 && mat.shininess > 0.0) {
+		        specularCoeff = pow(max(dot(reflected, toViewer), 0.0), mat.shininess);
+		    }
+		    return (mat.diffuse * diffuseCoeff + mat.specular * specularCoeff) * lightColor;
+		}
 
-vec2 randompos() {
-  int h = randomindex / 256;
-  int w = randomindex  - h * 256;
-  return vec2(float(w) / 256.0, float(h) / 256.0);
-}
+		struct IntersectionInfo {
+		    int sphereId;
+		    vec3 color;
+		    vec3 intersectionPoint;
+		    vec3 reflectedRay;
+		    vec3 refractedRay;
+		    float refractionCoeff;
+		};
 
-vec3 random3() {
-  randomindex += 1;
-  return texture2D(uRandomTexture, randompos()).xyz;
-}
+		bool getColorAtIntersection(vec3 point, vec3 ray, out IntersectionInfo info) {
+		    vec3 color = vec3(0.0);
+		    vec3 intersectionPoint;
+		    // Find an object we a looking at
+		    int closestObject = getIntersection(point, ray, intersectionPoint);
+		    if (closestObject == -1) {
+		        info.sphereId = closestObject;
+		        info.color = backgroundColor;
+		        return false;
+		    }
 
-vec2 random2() {
-  return random3().xy;
-}
+		    Sphere sphere = spheres[closestObject];
+		    Material material = materials[sphere.materialId];
+		    //return closestSphere.color;
 
-float random() {
-  return random3().x;
-}
+		    vec3 normal = normalize(intersectionPoint - sphere.position);
+		    vec3 toViewer = -ray;
+		    float cosThetaI = dot(normal, toViewer);
+		    vec3 reflectedRay = normalize(2.0 * cosThetaI * normal - toViewer);
 
-vec3 randomCosineHemisphere() {
-  float r1 = random();
-  float r2 = random();
-  float z = sqrt(1.0 - r2);
-  float phi = TWO_PI * r1;
-  float x = cos(phi) * sqrt(r2);
-  float y = sin(phi) * sqrt(r2);
-  return vec3(x, y, z);
-}
+		    // Add illumination from each light.
+		    for (int i = 0; i < numOfLightSources; i++) {
+		        // Check if the point on the object is illuminated by this light (not obscured by an obstacle).
+		        vec3 toLight = lightSources[i].position - intersectionPoint;
+		        float distanceToLight = length(toLight);
+		        toLight = normalize(toLight);
+		        vec3 intersectionLightPoint;
+		        int obstacle = getIntersection(intersectionPoint, toLight, intersectionLightPoint);
+		        if (obstacle != -1) {
+		            // Check if the light is closer then the intersected object.
+		            float distanceToObstacle = length(intersectionLightPoint - intersectionPoint);
+		            if (distanceToObstacle > distanceToLight) {
+		                obstacle = -1;
+		            }
+		        }
+		        if (obstacle == -1) {
+		            // Apply coefficients of the body color to the intensity of the light source.
+		            color += shade(material, lightSources[i].color, normal, reflectedRay, toLight, toViewer);
+		        }
+		    }
 
-bool rectXY(in float x1, in float y1, in float x2, in float y2, in float z,
-      in float tmin, inout float tmax, in Ray ray, in SurfaceInfo surfaceInfo, inout HitInfo hitInfo) {
-  float t = (z - ray.origin.z) / ray.dir.z;
-  vec3 p = at(ray, t);
-  if (t < tmin || t > tmax || p.x < x1 || p.x > x2 || p.y < y1 || p.y > y2) return false;
-  tmax = t;
-  hitInfo.pos = p;
-  hitInfo.normal = vec3(0.0, 0.0, 1.0);
-  hitInfo.surfaceInfo = surfaceInfo;
-  return true;
-}
+		    // Apply ambient light
+		    color += ambientLight * material.diffuse;
 
-bool rectYZ(in float y1, in float z1, in float y2, in float z2, in float x,
-      in float tmin, inout float tmax, in Ray ray, in SurfaceInfo surfaceInfo, inout HitInfo hitInfo) {
-  float t = (x - ray.origin.x) / ray.dir.x;
-  vec3 p = at(ray, t);
-  if (t < tmin || t > tmax || p.y < y1 || p.y > y2 || p.z < z1 || p.z > z2) return false;
-  tmax = t;
-  hitInfo.pos = p;
-  hitInfo.normal = vec3(1.0, 0.0, 0.0);
-  hitInfo.surfaceInfo = surfaceInfo;
-  return true;
-}
+		    float refractionCoeff = material.refractionCoeff;
+		    vec3 refractedRay = vec3(0.0);
+		    // Check for refraction.
+		    if (refractionCoeff > 0.0) {
+		        float nu = 1.0 / material.refractionIndex; // assume refraction index 1.0 for air
+		        // Check if we hit object from inside.
+		        if (cosThetaI < 0.0) {
+		            nu = 1.0 / nu;
+		            normal = -normal;
+		            cosThetaI = -cosThetaI;
+		        }
+		        float cosThetaT = 1.0 - (1.0 - cosThetaI * cosThetaI) * (nu * nu);
+		        // Check for total internal reflection (no refraction).
+		        if (cosThetaT < 0.0) {
+		            refractionCoeff = 0.0;
+		        } else {
+		            cosThetaT = sqrt(cosThetaT);
+		            refractedRay = normalize((cosThetaI * nu - cosThetaT) * normal - toViewer * nu);
+		        }
+		    }
 
-bool rectZX(in float z1, in float x1, in float z2, in float x2, in float y,
-      in float tmin, inout float tmax, in Ray ray, SurfaceInfo surfaceInfo, inout HitInfo hitInfo) {
-  float t = (y - ray.origin.y) / ray.dir.y;
-  vec3 p = at(ray, t);
-  if (t < tmin || t > tmax || p.z < z1 || p.z > z2 || p.x < x1 || p.x > x2) return false;
-  tmax = t;
-  hitInfo.pos = p;
-  hitInfo.normal = vec3(0.0, 1.0, 0.0);
-  hitInfo.surfaceInfo = surfaceInfo;
-  return true;
-}
+		    info.sphereId = closestObject;
+		    info.intersectionPoint = intersectionPoint;
+		    info.color = color;
+		    info.reflectedRay = reflectedRay;
+		    info.refractedRay = refractedRay;
+		    info.refractionCoeff = refractionCoeff;
 
-bool sphere(in vec3 center, in float radius, in float tmin, inout float tmax,
-      in Ray ray, in SurfaceInfo surfaceInfo, inout HitInfo info) {
-  vec3 oc = ray.origin - center;
-  float a = dot(ray.dir, ray.dir);
-  float b = dot(oc, ray.dir);
-  float c = dot(oc, oc) - radius * radius;
-  float dis = b * b - a * c;
+		    return true;
+		}
 
-  if (dis < 0.0) return false;
+		struct State {
+		    vec3 color;
+		    vec3 point;
+		    vec3 ray;
+		    vec3 coeff;
+		    int depth;
+		    int parent;
+		    bool shootRay;
+		};
 
-  float t = (-b - sqrt(dis)) / a;
-  if (t > tmin && t < tmax) {
-    tmax = t;
-    info.pos = at(ray, t);
-    info.normal = normalize(info.pos - center);
-    info.surfaceInfo = surfaceInfo;
-    return true;
-  }
-  t = (-b + sqrt(dis)) / a;
-  if (t > tmin && t < tmax) {
-    tmax = t;
-    info.pos = at(ray, t);
-    info.normal = normalize(info.pos - center);
-    info.surfaceInfo = surfaceInfo;
-    return true;
-  }
+		const int maxStackSize = 64;
+		int currStackSize = 0;
+		State stack[maxStackSize];
 
-  return false;
-}
+		void push(State state) {
+		    stack[currStackSize] = state;
+		    currStackSize++;
+		}
 
-bool intersect(in Ray ray, in float tmin, in float tmax, inout HitInfo info) {
-  bool hit = false;
-  hit = rectXY(-1.0, -1.0, 1.0, 1.0, -1.0, tmin, tmax, ray, wBack, info) || hit;
-  hit = rectYZ(-1.0, -1.0, 1.0, 1.0, -1.0, tmin, tmax, ray, wLeft, info) || hit;
-  hit = rectYZ(-1.0, -1.0, 1.0, 1.0,  1.0, tmin, tmax, ray, wRight, info) || hit;
-  hit = rectZX(-1.0, -1.0, 1.0, 1.0, -1.0, tmin, tmax, ray, wTop, info) || hit;
-  hit = rectZX(-1.0, -1.0, 1.0, 1.0,  1.0, tmin, tmax, ray, wBottom, info) || hit;
-  hit = rectZX(-0.3, -0.3, 0.3, 0.3,  0.999, tmin, tmax, ray, light, info) || hit;
-  hit = sphere(vec3(0.5, -1.0 + 0.4, 0.5), 0.4, tmin, tmax, ray, dielectric, info) || hit;
-  hit = sphere(vec3(-0.5, -1.0 + 0.4, 0.0), 0.4, tmin, tmax, ray, specular, info) || hit;
-  hit = sphere(vec3(0.2, -1.0 + 0.4, -0.5), 0.4, tmin, tmax, ray, lambertian, info) || hit;
-  return hit;
-}
+		void pop(out State state) {
+		    currStackSize--;
+		    state = stack[currStackSize];
+		}
 
-mat3 orthonormal(in vec3 z) {
-  vec3 w = normalize(z);
-  vec3 u = normalize(cross(w, abs(w.x) > 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
-  vec3 v = normalize(cross(u, w));
-  return mat3(u, v, w);
-}
+		vec3 getIlluminationFull(vec3 point, vec3 ray) {
+		    State curr;
+		    curr.color = vec3(0.0);
+		    curr.point = point;
+		    curr.ray = ray;
+		    curr.coeff = vec3(1.0);
+		    curr.depth = 1;
+		    curr.parent = -1;
+		    curr.shootRay = true;
 
-float cosinePdfValue(in HitInfo info, in vec3 dir) {
-  float c = dot(normalize(dir), info.normal);
-  return c > 0.0 ? c / PI : 0.0;
-}
+		    vec3 finalColor = vec3(0.0);
 
-vec3 cosinePdfDir(in HitInfo info) {
-  return orthonormal(info.normal) * randomCosineHemisphere();
-}
+		    push(curr);
 
-float lightPdfValue(in HitInfo info, in vec3 dir) {
-  Ray ray = Ray(info.pos, dir);
-  HitInfo hi;
-  SurfaceInfo si;
-  float t = 1000.0;
-  if (rectZX(-0.3, -0.3, 0.3, 0.3,  0.999, 0.001, t, ray, si, hi)) {
-    float area = 0.6 * 0.6;
-    float d2 = pow(length(dir) * 2.0, 2.0);
-    float cosine = abs(dot(dir, hi.normal)) / length(dir);
-    return d2 / (cosine * area);
-  }
-  return 0.0;
-}
+		    while (currStackSize > 0) {
+		        pop(curr);
+		        if (!curr.shootRay) {
+		            if (curr.parent >= 0) {
+		                stack[curr.parent].color += curr.coeff * curr.color;
+		            } else {
+		                finalColor += curr.coeff * curr.color;
+		            }
+		            continue;
+		        }
+		        IntersectionInfo info;
+		        bool hasIntersection = getColorAtIntersection(curr.point, curr.ray, info);
+		        // Add parent task.
+		        State state = curr;
+		        state.color = info.color;
+		        state.shootRay = false;
+		        int parent = currStackSize;
+		        push(state);
+		        // Add tasks for child rays.
+		        if (hasIntersection && curr.depth < maxRecursionDepth && currStackSize < maxStackSize) {
+		            State newState;
+		            newState.point = info.intersectionPoint;
+		            newState.color = vec3(0.0);
+		            newState.depth = curr.depth + 1;
+		            newState.parent = parent;
+		            newState.shootRay = true;
+		            // Reflected ray.
+		            float reflectionCoeff = 1.0 - info.refractionCoeff;
+		            if (reflectionCoeff > 1e-3) {
+		                vec3 reflMult = reflectionCoeff * materials[spheres[info.sphereId].materialId].specular;
+		                newState.ray = info.reflectedRay;
+		                newState.coeff = reflMult;
+		                push(newState);
+		            }
+		            // Refracted ray.
+		            if (info.refractionCoeff > 1e-3) {
+		                newState.ray = info.refractedRay;
+		                newState.coeff = info.refractionCoeff * vec3(1.0);
+		                push(newState);
+		            }
+		        }
+		    }
+		    return finalColor;
+		}
 
-vec3 lightPdfDir(in HitInfo info) {
-  vec3 onLight = vec3(-0.3 + 0.6 * random(), 0.999, -0.3 + 0.6 * random());
-  vec3 toLight = onLight - info.pos;
-  float dist = dot(toLight, toLight);
-  toLight = normalize(toLight);
-  vec3 dir = toLight;
-  return dir;
-}
+		vec3 getIlluminationReflectionOnly(vec3 point, vec3 ray) {
+		    vec3 totalColor = vec3(0.0);
+		    vec3 currPoint = point;
+		    vec3 currRay = ray;
+		    vec3 currMult = vec3(1.0);
 
-float mixPdfValue(in HitInfo info, in vec3 dir) {
-  return (1.0 - uSamplelight) * cosinePdfValue(info, dir) + uSamplelight * lightPdfValue(info, dir);
-}
+		    bool stop = false;
+		    for (int n = 0; n < maxRecursionDepth && !stop; n++) {
+		        IntersectionInfo info;
+		        bool hasIntersection = getColorAtIntersection(currPoint, currRay, info);
+		        if (!hasIntersection) {
+		            totalColor += currMult * info.color;
+		            stop = true;
+		        } else {
+		            totalColor += currMult * info.color;
+		            currPoint = info.intersectionPoint;
+		            currRay = info.reflectedRay;
+		            currMult *= materials[spheres[info.sphereId].materialId].specular;
+		        }
+		    }
+		    return totalColor;
+		}
 
-vec3 mixPdfDir(in HitInfo info) {
-  return random() < uSamplelight ? lightPdfDir(info) : cosinePdfDir(info);
-}
+		uniform mat4 camToWorld;
+		uniform vec2 windowSize;
+		uniform float cameraFOV;
+		uniform float fovTangent;
 
-float schlick(float cosine, float ref) {
-  float r0 = (1.0 - ref) / (1.0 + ref);
-  r0 = r0 * r0;
-  return r0 + (1.0 - r0) * pow((1.0 - cosine), 5.0);
-}
+		uniform sampler2D randoms;
+		uniform int randomsSize;
 
-vec3 trace(in Ray ray) {
-  vec3 c = vec3(1.0);
-  for (int i = 0; i < 10; i++) {
-    HitInfo info;
-    if (intersect(ray, 0.0001, 1000.0, info)) {
-      if (info.surfaceInfo.reflectType == REFLECT_LAMBERTIAN) {
-        vec3 normal = dot(ray.dir, info.normal) < 0.0 ? info.normal : -info.normal;
-        info.normal = normal;
-        vec3 dir = mixPdfDir(info);
-        float p = mixPdfValue(info, dir);
-        if (p <= 0.0) return vec3(0.0);
-        c *= p > 0.0 ? info.surfaceInfo.attenuation * dot(info.normal, dir) / (PI * p) : vec3(0.0);
-        ray = Ray(info.pos, dir);
-      } else if (info.surfaceInfo.reflectType == REFLECT_SPECULAR) {
-        vec3 normal = dot(ray.dir, info.normal) < 0.0 ? info.normal : -info.normal;
-        ray = Ray(info.pos, reflect(ray.dir, normal));
-      } else if(info.surfaceInfo.reflectType == REFLECT_DIELECTRIC) {
-        vec3 n;
-        float eta, cosine;
-        if (dot(ray.dir, info.normal) < 0.0) {
-          n = info.normal;
-          eta = 1.0 / uIndexOfRefraction;
-          cosine = -dot(ray.dir, info.normal) / length(ray.dir);
-        } else {
-          n = -info.normal;
-          eta = uIndexOfRefraction;
-          cosine = uIndexOfRefraction * dot(ray.dir, info.normal) / length(ray.dir);
-        }
-        vec3 r = refract(normalize(ray.dir), n, eta);
-        vec3 dir = r == vec3(0.0) || random() < schlick(cosine, uIndexOfRefraction) ? reflect(ray.dir, n) : r;
-        ray = Ray(info.pos, dir);
-      } else if (info.surfaceInfo.reflectType == REFLECT_LIGHT) {
-        c *= dot(info.normal, ray.dir) > 0.0 ? info.surfaceInfo.emission : vec3(0.0);
-        return c;
-      }
-    } else {
-      return vec3(0.0);
-    }
-  }
-  return vec3(0.0);
-}
+		uniform int numOfSamples;
+		uniform int samplingMode;
+		uniform int refractionEnabled;
 
-mat3 camera(in vec3 pos, in vec3 tar, in vec3 up) {
-  vec3 cz = normalize(tar - pos);
-  vec3 cx = normalize(cross(cz, normalize(up)));
-  vec3 cy = normalize(cross(cx, cz));
-  return mat3(cx, cy, cz);
-}
+		out vec4 fragColor;
 
-Ray ray(in mat3 cam, in vec2 uv, in vec3 origin) {
-  vec3 dir = cam * normalize(vec3(uv, 1.0));
-  Ray ray = Ray(origin, dir);
-  return ray;
-}
+		int currRand = 0;
 
-void main() {
+		void seed(int seed) {
+		    currRand = seed;
+		}
 
-  initialize();
+		float rand() {
+		    float value = texture(randoms, vec2(float(currRand) / float(randomsSize), 0)).r;
+		    currRand++;
+		    return value;
+		}
 
-  vec3 pos = vec3(0.0, 0.0, 2.0);
-  vec3 tar = vec3(0.0, 0.0, 0.0);
-  mat3 cam = camera(pos, tar, vec3(0.0, 1.0, 0.0));
+		vec3 shoot(vec2 fragCoord, float aspect, vec3 viewPoint) {
+		    float px = (2.0 * (fragCoord.x + 0.5) / windowSize.x - 1.0) * fovTangent * aspect;
+		    float py = (2.0 * (fragCoord.y + 0.5) / windowSize.y - 1.0) * fovTangent;
+		    vec3 posWorld = vec4(camToWorld * vec4(px, py, -1.0, 1.0)).xyz;
+		    vec3 ray = normalize(posWorld - viewPoint);		  
+		    vec3 color = refractionEnabled > 0 ?
+		                getIlluminationFull(viewPoint, ray) :
+		                getIlluminationReflectionOnly(viewPoint, ray);
+		    return color;
+		}
 
-  vec3 c = vec3(0.0);
-  for (int i = 1; i <= 100; i++) {
-    vec2 uv = gl_FragCoord.xy + random2();
-    vec2 st = (uv * 2.0 - uResolution) / uResolution.y;
-    Ray ray = ray(cam, st, pos);
-    c += trace(ray);
-    if (uSamples == i) break;
-  }
-  c /= float(uSamples < 100 ? uSamples : 100);
-
-  c = pow(c, vec3(1.0 / 2.2));
-
-  gl_FragColor = vec4(c, 1.0);
-}
-        `,
-      });
-
-      const props = {
-        top: [255, 255, 255],
-        bottom: [255, 255, 255],
-        right: [100, 255, 100],
-        left: [255, 100, 100],
-        back: [100, 100, 255],
-        lambertian: [255, 255, 255],
-        lightColor: [255, 255, 255],
-        lightIntensity: 4.0,
-        indexOfRefraction: 1.5,
-        lightSamplingRate: 0.1,
-        samples: 20,
-        animation: true,
-      }
-
-      const gui = new dat.GUI();
-      const guiWall = gui.addFolder('Wall');
-      addColorToGui(guiWall, props, 'top', function(v) {
-        glsl.setUniform('uWallTop', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
-      });
-      addColorToGui(guiWall, props, 'bottom', function(v) {
-        glsl.setUniform('uWallBottom', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
-      });
-      addColorToGui(guiWall, props, 'right', function(v) {
-        glsl.setUniform('uWallRight', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
-      });
-      addColorToGui(guiWall, props, 'left', function(v) {
-        glsl.setUniform('uWallLeft', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
-      });
-      addColorToGui(guiWall, props, 'back', function(v) {
-        glsl.setUniform('uWallBack', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
-      });
-      const guiLight = gui.addFolder('Light');
-      addColorToGui(guiLight, props, 'lightColor', function(v) {
-        glsl.setUniform('uLightColor', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
-      });
-      addToGui(guiLight, props, 'lightIntensity', function(v) {
-        glsl.setUniform('uLightIntensity', '1f', v);
-      }, this, 1.0, 10.0);
-      const guiLambertian = gui.addFolder('Lambertian Sphere');
-      addColorToGui(guiLambertian, props, 'lambertian', function(v) {
-        glsl.setUniform('uLambertian', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
-      });
-      const guiDielectric = gui.addFolder('Dielectric Sphere');
-      addToGui(guiDielectric, props, 'indexOfRefraction', function(v) {
-        glsl.setUniform('uIndexOfRefraction', '1f', v);
-      }, this, 1.0, 3.0);
-      addToGui(gui, props, 'lightSamplingRate', function(v) {
-        glsl.setUniform('uSamplelight', '1f', v)
-      }, this, 0.0, 1.0);
-      addToGui(gui, props, 'samples', function(v) {
-        glsl.setUniform('uSamples', '1i', v);
-      }, this, 1, 100);
-      var funcToStartOrStopAnimation = function(v) {
-        if (v && !glsl.isAnimating()) {
-          glsl.start();
-        } else if (!v && glsl.isAnimating()) {
-          glsl.stop();
-        }
-      };
-      addToGui(gui, props, 'animation', funcToStartOrStopAnimation, this);
-
-
-      glsl.setUniform('uWallTop', '3fv', [props.top[0] / 255.0, props.top[1] / 255.0, props.top[2] / 255.0]);
-      glsl.setUniform('uWallBottom', '3fv', [props.bottom[0] / 255.0, props.bottom[1] / 255.0, props.bottom[2] / 255.0]);
-      glsl.setUniform('uWallRight', '3fv', [props.right[0] / 255.0, props.right[1] / 255.0, props.right[2] / 255.0]);
-      glsl.setUniform('uWallLeft', '3fv', [props.left[0] / 255.0, props.left[1] / 255.0, props.left[2] / 255.0]);
-      glsl.setUniform('uWallBack', '3fv', [props.back[0] / 255.0, props.back[1] / 255.0, props.back[2] / 255.0]);
-      glsl.setUniform('uLambertian', '3fv', [props.lambertian[0] / 255.0, props.lambertian[1] / 255.0, props.lambertian[2] / 255.0]);
-      glsl.setUniform('uLightColor', '3fv', [props.lightColor[0] / 255.0, props.lightColor[1] / 255.0, props.lightColor[2] / 255.0]);
-      glsl.setUniform('uLightIntensity', '1f', props.lightIntensity);
-      glsl.setUniform('uSamplelight', '1f', props.lightSamplingRate);
-      glsl.setUniform('uIndexOfRefraction', '1f', props.indexOfRefraction);
-      glsl.setUniform('uSamples', '1i', props.samples);
-      glsl.setTexture('uRandomTexture', './textures/rgb_noise.bmp');
-      glsl.start();
-    });
-  </script>
-</body>
-</html>
+		void main()
+		{
+		    float aspect = windowSize.x / windowSize.y; // assuming width > height
+		    vec3 viewPoint = vec4(camToWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+		    vec3 color = vec3(0.0);
+		    if (numOfSamples == 1) {
+		        color = shoot(gl_FragCoord.xy, aspect, viewPoint);
+		    } else {
+		    	float ns = float(numOfSamples);
+		        seed(int(gl_FragCoord.x * windowSize.y + gl_FragCoord.y));
+		        if (samplingMode == 0) {
+		            for (int i = 0; i < numOfSamples; i++) {
+		                float dx = rand();
+		                float dy = rand();
+		                color += shoot(gl_FragCoord.xy - vec2(0.5) + vec2(dx, dy), aspect, viewPoint);
+		            }
+		            color = color / ns;
+		        } else {		        	
+		            for (int i = 0; i < numOfSamples; i++)
+		            for (int j = 0; j < numOfSamples; j++) {
+		                float dx = (float(i) + rand()) / ns;
+		                float dy = (float(j) + rand()) / ns;
+		                color += shoot(gl_FragCoord.xy - vec2(0.5) + vec2(dx, dy), aspect, viewPoint);
+		            }
+		            color = color / (ns * ns);
+		        }       
+		    }
+		    fragColor = vec4(clamp(color, vec3(0.0), vec3(1.0)), 1.0);
+		    //float r = texture(randoms, vec2(gl_FragCoord.x / float(randomsSize), 0)).r;
+		    //fragColor = vec4(r, 0.0, 0.0, 1.0);
+		    //fragColor = vec4(gl_FragCoord.x / windowSize.x, gl_FragCoord.y / windowSize.y, 0, 1);
+		}

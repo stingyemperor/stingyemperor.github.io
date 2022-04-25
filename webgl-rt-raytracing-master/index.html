@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+<head>	
+	<title>WebGL Real Time Ray Tracing</title>	
+	<meta charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="css/style.css">	
+	<script type="text/javascript" src="lib/jquery-3.6.0.min.js"></script>		
+	<script type="text/javascript" src="lib/gl-matrix-min.js"></script>		
+	<script type="text/javascript" src="lib/wgl.js"></script>		
+	<script type="text/javascript" src="lib/requestAnimationFrame.js"></script>		
+	<script type="text/javascript" src="js/objects.js"></script>
+	<script type="text/javascript" src="js/raytracing.js"></script>
+</head>
+<body>	
+	<canvas id="canvas"></canvas>
+	<div id="controls-pane">
+		<table>
+		<tr>
+		<td><label>Max depth:</label></td>
+		<td><input type="number" id="max-depth" value="3" min="1" max="16"></td>
+		</tr>
+		<tr>
+		<td><label>Samples:</label></td>
+		<td><input type="number" id="samples" value="1" min="1" max="256"></td>
+		</tr>
+		<tr>
+		<td><label>Sampling:</label></td>
+		<td><select id="sampling">
+			<option selected value="0">Random</option>
+			<option value="1">Multi Jittered</option> 
+			</select>
+		</td>
+		</tr>
+		<tr>
+		<td><label>Transparency:</label></td>
+		<td><input type="checkbox" id="transparency"></td>
+		</tr>
+		<tr>
+		<td><label>Background:</label></td>
+		<td><label>#</label><input type="text" id="bg-color" value="20202f" size="6"></td>
+		</tr>
+		<tr>
+		<tr>
+		<td><label>Objects:</label><input type="number" id="num-of-objects" value="16" min="1" max="64"></td>
+		<td><input type="button" id="random-scene" value="Random scene"></td>
+		</tr>
+		<tr>		
+		</table>
+	</div>	
+
+	<script type="text/javascript">	
+		$(document).ready( function () {
+			var $canvas = $("#canvas");					
+			var $maxDepth = $("#max-depth");
+			var $samples = $("#samples");
+			var $sampling = $("#sampling");
+			var $transparency = $("#transparency");
+			var $bgColor = $("#bg-color");
+
+			var mousePressed = false;
+			var prevMousePoint = null;
+			var currentBGColor = $bgColor.val();
+
+			var hexToRGB = function(hex) {
+				var match = hex.match(/^([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/i);
+				if (match === null) {
+					return null;
+				}
+				return match.slice(1).map(e => parseInt(e, 16) / 255.0);  				
+			}
+
+			setMaxDepth($maxDepth.val());
+			setSamples($samples.val());
+			setSamplingMode($sampling.val());
+			enableTransparency($transparency.prop("checked"));		
+			setBackgroundColor(hexToRGB(currentBGColor));
+
+			init();			
+			render();
+
+			$maxDepth.change( function (event) {
+				setMaxDepth($(this).val());
+				requestAnimationFrame(render);
+			});
+			$samples.change( function (event) {
+				setSamples($(this).val());
+				requestAnimationFrame(render);
+			});
+			$sampling.change( function (event) {
+				setSamplingMode($(this).val());
+				requestAnimationFrame(render);
+			});
+			$transparency.change( function (event) {
+				enableTransparency($(this).prop("checked"));
+				requestAnimationFrame(render);
+			});
+			$bgColor.change( function (event) {
+				var newBGColor = $(this).val();
+				var rgb = hexToRGB(newBGColor);
+				if (rgb !== null) {
+					currentBGColor = newBGColor;
+					setBackgroundColor(rgb);
+					requestAnimationFrame(render);	
+				} else {
+					$(this).val(currentBGColor);
+				}
+			});
+			$("#random-scene").click( function(event) {
+				randomScene($("#num-of-objects").val());
+				requestAnimationFrame(render);	
+			})
+
+			$canvas.mousedown( function (event) {
+				mousePressed = true;
+			});
+			$canvas.mouseup( function (event) {
+				mousePressed = false;
+				prevMousePoint = null;
+			});
+			$canvas.mousemove( function (event) {
+				if (mousePressed) {
+					if (prevMousePoint !== null) {
+						var dx = (event.clientX - prevMousePoint[0]) * Math.PI / 180.0;
+						var dy = (event.clientY - prevMousePoint[1]) * Math.PI / 180.0;
+						rotateScene(dx, dy);
+						requestAnimationFrame(render);
+					}
+					prevMousePoint = [event.clientX, event.clientY];
+				}
+			});
+		});
+	</script>
+
+	<script id="vert-shader" type="text/vert-shader">#version 300 es		
+	
+		in vec3 vertex;
+
+		void main()
+		{
+    		gl_Position = vec4(vertex, 1.0); // vertex is in NDC, just pass it
+		}
+	</script>
+
+	<script id="frag-shader" type="text/frag-shader">#version 300 es
+
+		precision mediump float;
+		
+		struct Sphere {
+		    vec3 position;
+		    float radius;
+		    int materialId;
+		};
+
+		struct LightSource {
+		    vec3 position;
+		    vec3 color;
+		};
+
+		struct Material {
+		    vec3 diffuse;
+		    vec3 specular;
+		    float shininess;
+		    float refractionCoeff;
+		    float refractionIndex;
+		};
+
+		const int maxArraySize = 64;
+		uniform Sphere spheres[maxArraySize];
+		uniform LightSource lightSources[maxArraySize];
+		uniform Material materials[maxArraySize];
+
+		uniform int numOfSpheres;
+		uniform int numOfLightSources;
+
+		uniform vec3 ambientLight;
+		uniform vec3 backgroundColor;
+		uniform int maxRecursionDepth;		
+
+		bool intersectSphere(Sphere sphere, vec3 startPoint, vec3 ray, out float intersectionDistance) {
+		    vec3 v = startPoint - sphere.position;
+		    float d = dot(v, ray);
+		    float discriminant = d * d - (dot(v, v) - sphere.radius * sphere.radius);
+		    if (discriminant < 0.0) {
+		        return false;
+		    }
+
+		    float sq = sqrt(discriminant);
+		    float t1 = -d + sq;
+		    float t2 = -d - sq;
+
+		    float t = 0.0;
+		    float epsilon = 1e-3;
+		    if (t1 < epsilon) {
+		        if (t2 < epsilon) {
+		            return false;
+		        }
+		        else {
+		            t = t2;
+		        }
+		    } else if (t2 < epsilon) {
+		        t = t1;
+		    } else {
+		        t = (t1 > t2) ? t2 : t1;
+		    }
+
+		    intersectionDistance = t;
+		    return true;
+		}
+
+		int getIntersection(vec3 startPoint, vec3 ray, out vec3 closestIntersectionPoint) {
+		    int closestObject = -1;
+		    float minDistance = 1e+8;
+		    for (int i = 0; i < numOfSpheres; i++) {
+		        float intersectionDistance;
+		        if (intersectSphere(spheres[i], startPoint, ray, intersectionDistance)) {
+		            if (intersectionDistance < minDistance) {
+		                closestObject = i;               
+		                minDistance = intersectionDistance;
+		            }
+		        }
+		    }
+		    if (closestObject != -1) {
+		        closestIntersectionPoint = startPoint + minDistance * ray;
+		    }
+		    return closestObject;
+		}
+
+		vec3 shade(Material mat, vec3 lightColor, vec3 normal, vec3 reflected, vec3 toLight, vec3 toViewer) {
+		    float diffuseCoeff = max(dot(toLight, normal), 0.0);
+		    float specularCoeff = 0.0;
+		    if (diffuseCoeff > 0.0 && mat.shininess > 0.0) {
+		        specularCoeff = pow(max(dot(reflected, toViewer), 0.0), mat.shininess);
+		    }
+		    return (mat.diffuse * diffuseCoeff + mat.specular * specularCoeff) * lightColor;
+		}
+
+		struct IntersectionInfo {
+		    int sphereId;
+		    vec3 color;
+		    vec3 intersectionPoint;
+		    vec3 reflectedRay;
+		    vec3 refractedRay;
+		    float refractionCoeff;
+		};
+
+		bool getColorAtIntersection(vec3 point, vec3 ray, out IntersectionInfo info) {
+		    vec3 color = vec3(0.0);
+		    vec3 intersectionPoint;
+		    // Find an object we a looking at
+		    int closestObject = getIntersection(point, ray, intersectionPoint);
+		    if (closestObject == -1) {
+		        info.sphereId = closestObject;
+		        info.color = backgroundColor;
+		        return false;
+		    }
+
+		    Sphere sphere = spheres[closestObject];
+		    Material material = materials[sphere.materialId];
+		    //return closestSphere.color;
+
+		    vec3 normal = normalize(intersectionPoint - sphere.position);
+		    vec3 toViewer = -ray;
+		    float cosThetaI = dot(normal, toViewer);
+		    vec3 reflectedRay = normalize(2.0 * cosThetaI * normal - toViewer);
+
+		    // Add illumination from each light.
+		    for (int i = 0; i < numOfLightSources; i++) {
+		        // Check if the point on the object is illuminated by this light (not obscured by an obstacle).
+		        vec3 toLight = lightSources[i].position - intersectionPoint;
+		        float distanceToLight = length(toLight);
+		        toLight = normalize(toLight);
+		        vec3 intersectionLightPoint;
+		        int obstacle = getIntersection(intersectionPoint, toLight, intersectionLightPoint);
+		        if (obstacle != -1) {
+		            // Check if the light is closer then the intersected object.
+		            float distanceToObstacle = length(intersectionLightPoint - intersectionPoint);
+		            if (distanceToObstacle > distanceToLight) {
+		                obstacle = -1;
+		            }
+		        }
+		        if (obstacle == -1) {
+		            // Apply coefficients of the body color to the intensity of the light source.
+		            color += shade(material, lightSources[i].color, normal, reflectedRay, toLight, toViewer);
+		        }
+		    }
+
+		    // Apply ambient light
+		    color += ambientLight * material.diffuse;
+
+		    float refractionCoeff = material.refractionCoeff;
+		    vec3 refractedRay = vec3(0.0);
+		    // Check for refraction.
+		    if (refractionCoeff > 0.0) {
+		        float nu = 1.0 / material.refractionIndex; // assume refraction index 1.0 for air
+		        // Check if we hit object from inside.
+		        if (cosThetaI < 0.0) {
+		            nu = 1.0 / nu;
+		            normal = -normal;
+		            cosThetaI = -cosThetaI;
+		        }
+		        float cosThetaT = 1.0 - (1.0 - cosThetaI * cosThetaI) * (nu * nu);
+		        // Check for total internal reflection (no refraction).
+		        if (cosThetaT < 0.0) {
+		            refractionCoeff = 0.0;
+		        } else {
+		            cosThetaT = sqrt(cosThetaT);
+		            refractedRay = normalize((cosThetaI * nu - cosThetaT) * normal - toViewer * nu);
+		        }
+		    }
+
+		    info.sphereId = closestObject;
+		    info.intersectionPoint = intersectionPoint;
+		    info.color = color;
+		    info.reflectedRay = reflectedRay;
+		    info.refractedRay = refractedRay;
+		    info.refractionCoeff = refractionCoeff;
+
+		    return true;
+		}
+
+		struct State {
+		    vec3 color;
+		    vec3 point;
+		    vec3 ray;
+		    vec3 coeff;
+		    int depth;
+		    int parent;
+		    bool shootRay;
+		};
+
+		const int maxStackSize = 64;
+		int currStackSize = 0;
+		State stack[maxStackSize];
+
+		void push(State state) {
+		    stack[currStackSize] = state;
+		    currStackSize++;
+		}
+
+		void pop(out State state) {
+		    currStackSize--;
+		    state = stack[currStackSize];
+		}
+
+		vec3 getIlluminationFull(vec3 point, vec3 ray) {
+		    State curr;
+		    curr.color = vec3(0.0);
+		    curr.point = point;
+		    curr.ray = ray;
+		    curr.coeff = vec3(1.0);
+		    curr.depth = 1;
+		    curr.parent = -1;
+		    curr.shootRay = true;
+
+		    vec3 finalColor = vec3(0.0);
+
+		    push(curr);
+
+		    while (currStackSize > 0) {
+		        pop(curr);
+		        if (!curr.shootRay) {
+		            if (curr.parent >= 0) {
+		                stack[curr.parent].color += curr.coeff * curr.color;
+		            } else {
+		                finalColor += curr.coeff * curr.color;
+		            }
+		            continue;
+		        }
+		        IntersectionInfo info;
+		        bool hasIntersection = getColorAtIntersection(curr.point, curr.ray, info);
+		        // Add parent task.
+		        State state = curr;
+		        state.color = info.color;
+		        state.shootRay = false;
+		        int parent = currStackSize;
+		        push(state);
+		        // Add tasks for child rays.
+		        if (hasIntersection && curr.depth < maxRecursionDepth && currStackSize < maxStackSize) {
+		            State newState;
+		            newState.point = info.intersectionPoint;
+		            newState.color = vec3(0.0);
+		            newState.depth = curr.depth + 1;
+		            newState.parent = parent;
+		            newState.shootRay = true;
+		            // Reflected ray.
+		            float reflectionCoeff = 1.0 - info.refractionCoeff;
+		            if (reflectionCoeff > 1e-3) {
+		                vec3 reflMult = reflectionCoeff * materials[spheres[info.sphereId].materialId].specular;
+		                newState.ray = info.reflectedRay;
+		                newState.coeff = reflMult;
+		                push(newState);
+		            }
+		            // Refracted ray.
+		            if (info.refractionCoeff > 1e-3) {
+		                newState.ray = info.refractedRay;
+		                newState.coeff = info.refractionCoeff * vec3(1.0);
+		                push(newState);
+		            }
+		        }
+		    }
+		    return finalColor;
+		}
+
+		vec3 getIlluminationReflectionOnly(vec3 point, vec3 ray) {
+		    vec3 totalColor = vec3(0.0);
+		    vec3 currPoint = point;
+		    vec3 currRay = ray;
+		    vec3 currMult = vec3(1.0);
+
+		    bool stop = false;
+		    for (int n = 0; n < maxRecursionDepth && !stop; n++) {
+		        IntersectionInfo info;
+		        bool hasIntersection = getColorAtIntersection(currPoint, currRay, info);
+		        if (!hasIntersection) {
+		            totalColor += currMult * info.color;
+		            stop = true;
+		        } else {
+		            totalColor += currMult * info.color;
+		            currPoint = info.intersectionPoint;
+		            currRay = info.reflectedRay;
+		            currMult *= materials[spheres[info.sphereId].materialId].specular;
+		        }
+		    }
+		    return totalColor;
+		}
+
+		uniform mat4 camToWorld;
+		uniform vec2 windowSize;
+		uniform float cameraFOV;
+		uniform float fovTangent;
+
+		uniform sampler2D randoms;
+		uniform int randomsSize;
+
+		uniform int numOfSamples;
+		uniform int samplingMode;
+		uniform int refractionEnabled;
+
+		out vec4 fragColor;
+
+		int currRand = 0;
+
+		void seed(int seed) {
+		    currRand = seed;
+		}
+
+		float rand() {
+		    float value = texture(randoms, vec2(float(currRand) / float(randomsSize), 0)).r;
+		    currRand++;
+		    return value;
+		}
+
+		vec3 shoot(vec2 fragCoord, float aspect, vec3 viewPoint) {
+		    float px = (2.0 * (fragCoord.x + 0.5) / windowSize.x - 1.0) * fovTangent * aspect;
+		    float py = (2.0 * (fragCoord.y + 0.5) / windowSize.y - 1.0) * fovTangent;
+		    vec3 posWorld = vec4(camToWorld * vec4(px, py, -1.0, 1.0)).xyz;
+		    vec3 ray = normalize(posWorld - viewPoint);		  
+		    vec3 color = refractionEnabled > 0 ?
+		                getIlluminationFull(viewPoint, ray) :
+		                getIlluminationReflectionOnly(viewPoint, ray);
+		    return color;
+		}
+
+		void main()
+		{
+		    float aspect = windowSize.x / windowSize.y; // assuming width > height
+		    vec3 viewPoint = vec4(camToWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+		    vec3 color = vec3(0.0);
+		    if (numOfSamples == 1) {
+		        color = shoot(gl_FragCoord.xy, aspect, viewPoint);
+		    } else {
+		    	float ns = float(numOfSamples);
+		        seed(int(gl_FragCoord.x * windowSize.y + gl_FragCoord.y));
+		        if (samplingMode == 0) {
+		            for (int i = 0; i < numOfSamples; i++) {
+		                float dx = rand();
+		                float dy = rand();
+		                color += shoot(gl_FragCoord.xy - vec2(0.5) + vec2(dx, dy), aspect, viewPoint);
+		            }
+		            color = color / ns;
+		        } else {		        	
+		            for (int i = 0; i < numOfSamples; i++)
+		            for (int j = 0; j < numOfSamples; j++) {
+		                float dx = (float(i) + rand()) / ns;
+		                float dy = (float(j) + rand()) / ns;
+		                color += shoot(gl_FragCoord.xy - vec2(0.5) + vec2(dx, dy), aspect, viewPoint);
+		            }
+		            color = color / (ns * ns);
+		        }       
+		    }
+		    fragColor = vec4(clamp(color, vec3(0.0), vec3(1.0)), 1.0);
+		    //float r = texture(randoms, vec2(gl_FragCoord.x / float(randomsSize), 0)).r;
+		    //fragColor = vec4(r, 0.0, 0.0, 1.0);
+		    //fragColor = vec4(gl_FragCoord.x / windowSize.x, gl_FragCoord.y / windowSize.y, 0, 1);
+		}
+	</script>
+</body>
+</html>

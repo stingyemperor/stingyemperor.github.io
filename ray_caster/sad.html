@@ -560,11 +560,17 @@
             bool hit = false;
             hit = sphere(pos, dir, SPHERE_POS1, SPHERE_RADIUS, 1, tmin, tmax, info) || hit;
             hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS, 2, tmin, tmax, info) || hit;
+<<<<<<< HEAD
            hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, 3, tmin, tmax, info) || hit;
             hit = IntersectPlane(0.0, 1.0, 0.0, 0.0, 0, pos, dir, tmin, tmax, info) || hit;
         
                                     //hit = sphere(pos,dir,light.position, SPHERE_RADIUS,1,tmin,tmax,info)||hit;
                     //hit = rectZX(-8.0, -5.0, 8.0, 5.0, 0.0, tmin, tmax, pos, dir, 0, info) || hit;
+=======
+            hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, 3, tmin, tmax, info) || hit;
+                    hit = IntersectPlane(0.0, 1.0, 0.0, 0.0, 0, pos, dir, tmin, tmax, info) || hit;
+            //hit = rectZX(-8.0, -5.0, 8.0, 5.0, 0.0, tmin, tmax, pos, dir, 0, info) || hit;
+>>>>>>> 4ad97062c8d091b0f83d8a47392741e4ad599c82
         
             vec3 v0 = vec3(-5.0, 5.0, 5.0);
             vec3 v1 = vec3(-5.0, -5.0, 5.0);
@@ -581,9 +587,14 @@
             hit = sphere(pos, dir, SPHERE_POS1, SPHERE_RADIUS, tmin, tMax) || hit;
             hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS, tmin, tMax) || hit;
             hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, tmin, tMax) || hit;
+<<<<<<< HEAD
             hit = IntersectPlane(0.0, 1.0, 0.0, 0.0, 0, pos, dir, tmin, tMax) || hit;
         
                     //hit = rectZX(-8.0, -5.0, 8.0, 5.0, 0.0, tmin, tMax, pos, dir) || hit;
+=======
+                    hit = IntersectPlane(0.0, 1.0, 0.0, 0.0, 0, pos, dir, tmin, tMax) || hit;
+            //hit = rectZX(-8.0, -5.0, 8.0, 5.0, 0.0, tmin, tMax, pos, dir) || hit;
+>>>>>>> 4ad97062c8d091b0f83d8a47392741e4ad599c82
         
             vec3 v0 = vec3(-5.0, 5.0, 5.0);
             vec3 v1 = vec3(-5.0, -5.0, 5.0);

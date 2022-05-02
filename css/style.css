@@ -415,3 +415,8 @@ p a:hover {
 	margin: 0 0 0 23px;
 	width: 30px;
 }
+
+mark.red{
+	color: #8a0303;
+	background: none;
+}

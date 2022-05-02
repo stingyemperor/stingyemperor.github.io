@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Cornel Box by Path Tracing</title>
+  <title>Monte Carlo Ray Tracing</title>
   <style>
     body {
       margin: 0;
@@ -42,9 +42,6 @@ uniform sampler2D uFloorTexture;
 uniform sampler2D uFloorNormal;
 uniform vec3 uWallTop;
 uniform vec3 uWallBottom;
-uniform vec3 uWallRight;
-uniform vec3 uWallLeft;
-uniform vec3 uWallBack;
 uniform vec3 uLambertian;
 uniform vec3 uLightColor;
 uniform float uLightIntensity;
@@ -68,16 +65,16 @@ out vec4 fragmentColor;
 #define REFLECT_DIELECTRIC 3
 #define REFLECT_LIGHT 4
 
-struct SurfaceInfo {
+struct Material {
   int reflectType;
-  vec3 attenuation;
+  vec3 diffuse;
   vec3 emission;
 };
 
 struct HitInfo {
   vec3 pos;
   vec3 normal;
-  SurfaceInfo surfaceInfo;
+  Material material;
 };
 
 struct Ray {
@@ -87,15 +84,14 @@ struct Ray {
 
 
 int randomindex;
-SurfaceInfo wTop, wBottom, wRight, wLeft, wBack, lambertian, specular, dielectric, light;
+Material wTop, lambertian, specular, dielectric, light;
 void initialize() {
   randomindex = int(gl_FragCoord.x * fract(sin(dot(gl_FragCoord.xy * 0.01, vec2(19.342, 54.342)) * 3244.4234)) * 256.0 * 256.0);
-
-  wTop = SurfaceInfo(REFLECT_LAMBERTIAN, uWallTop, vec3(0.0));
-  lambertian = SurfaceInfo(REFLECT_LAMBERTIAN, uLambertian, vec3(0.0));
-  specular = SurfaceInfo(REFLECT_SPECULAR, vec3(0.0), vec3(0.0));
-  dielectric = SurfaceInfo(REFLECT_DIELECTRIC, vec3(0.0), vec3(0.0));
-  light = SurfaceInfo(REFLECT_LIGHT, vec3(0.0), uLightColor * uLightIntensity);
+  wTop = Material(REFLECT_LAMBERTIAN, uWallTop, vec3(0.0));
+  lambertian = Material(REFLECT_LAMBERTIAN, uLambertian, vec3(0.0));
+  specular = Material(REFLECT_SPECULAR, vec3(0.0), vec3(0.0));
+  dielectric = Material(REFLECT_DIELECTRIC, vec3(0.0), vec3(0.0));
+  light = Material(REFLECT_LIGHT, vec3(0.0), uLightColor * uLightIntensity);
 }
 
 vec3 at(in Ray ray, in float t) {
@@ -152,14 +148,14 @@ vec3 randomCosineHemisphere() {
 
 
 bool rectZX(in float z1, in float x1, in float z2, in float x2, in float y,
-      in float tmin, inout float tmax, in Ray ray, SurfaceInfo surfaceInfo, inout HitInfo hitInfo) {
+      in float tmin, inout float tmax, in Ray ray, Material material, inout HitInfo hitInfo) {
   float t = (y - ray.origin.y) / ray.dir.y;
   vec3 p = at(ray, t);
   if (t < tmin || t > tmax || p.z < z1 || p.z > z2 || p.x < x1 || p.x > x2) return false;
   tmax = t;
   hitInfo.pos = p;
   hitInfo.normal = vec3(0.0, 1.0, 0.0);
-  hitInfo.surfaceInfo = surfaceInfo;
+  hitInfo.material = material;
   return true;
 }
 
@@ -174,7 +170,7 @@ vec2 planeMap(vec3 point){
 }
 
 bool rectZXfloor(in float z1, in float x1, in float z2, in float x2, in float y,
-      in float tmin, inout float tmax, in Ray ray, SurfaceInfo surfaceInfo, inout HitInfo hitInfo) {
+      in float tmin, inout float tmax, in Ray ray, Material material, inout HitInfo hitInfo) {
   float t = (y - ray.origin.y) / ray.dir.y;
   vec3 p = at(ray, t);
   if (t < tmin || t > tmax || p.z < z1 || p.z > z2 || p.x < x1 || p.x > x2) return false;
@@ -184,20 +180,17 @@ bool rectZXfloor(in float z1, in float x1, in float z2, in float x2, in float y,
   vec3 tempN = texture(uFloorNormal,uv).xyz;
   hitInfo.normal = 2.0*tempN -1.0;
 
-  //hitInfo.normal = vec3(0.0, 1.0, 0.0);
-  hitInfo.surfaceInfo = surfaceInfo;
+  hitInfo.material = material;
   
   vec3 temp = texture(uFloorTexture,uv).xyz;
-  hitInfo.surfaceInfo.attenuation = temp;
+  hitInfo.material.diffuse = temp;
 
   return true;
 }
 
 
-
-
 bool sphere(in vec3 center, in float radius, in float tmin, inout float tmax,
-      in Ray ray, in SurfaceInfo surfaceInfo, inout HitInfo info) {
+      in Ray ray, in Material material, inout HitInfo info) {
   vec3 oc = ray.origin - center;
   float a = dot(ray.dir, ray.dir);
   float b = dot(oc, ray.dir);
@@ -211,7 +204,7 @@ bool sphere(in vec3 center, in float radius, in float tmin, inout float tmax,
     tmax = t;
     info.pos = at(ray, t);
     info.normal = normalize(info.pos - center);
-    info.surfaceInfo = surfaceInfo;
+    info.material = material;
     return true;
   }
   t = (-b + sqrt(dis)) / a;
@@ -219,7 +212,7 @@ bool sphere(in vec3 center, in float radius, in float tmin, inout float tmax,
     tmax = t;
     info.pos = at(ray, t);
     info.normal = normalize(info.pos - center);
-    info.surfaceInfo = surfaceInfo;
+    info.material = material;
     return true;
   }
 
@@ -228,14 +221,8 @@ bool sphere(in vec3 center, in float radius, in float tmin, inout float tmax,
 
 bool intersect(in Ray ray, in float tmin, in float tmax, inout HitInfo info) {
   bool hit = false;
-  //hit = rectXY(-1.0, -1.0, 1.0, 1.0, -1.0, tmin, tmax, ray, wBack, info) || hit;
-  //hit = rectYZ(-1.0, -1.0, 1.0, 1.0, -1.0, tmin, tmax, ray, wLeft, info) || hit;
-  //hit = rectYZ(-1.0, -1.0, 1.0, 1.0,  1.0, tmin, tmax, ray, wRight, info) || hit;
-  hit = rectZXfloor(-50.0, -50.0, 50.0, 50.0, -2.0, tmin, tmax, ray, wTop, info) || hit;
-  //hit = rectZX(-1.0, -1.0, 1.0, 1.0,  1.0, tmin, tmax, ray, wBottom, info) || hit;
+  hit = rectZXfloor(-25.0, -25.0, 25.0, 25.0, -2.0, tmin, tmax, ray, wTop, info) || hit;
   hit = rectZX(-1.0, -1.0, 1.0, 1.0,  2.0, tmin, tmax, ray, light, info) || hit;
-  //hit = rectZXnew(-0.3, -0.3, 0.3, 0.3,  0.999, tmin, tmax, ray, light, info) || hit;
-
   hit = sphere(vec3(0.0, -0.2, -3.0), 1.5, tmin, tmax, ray, dielectric, info) || hit;
   hit = sphere(vec3(0.0, -0.2,3.0), 1.5, tmin, tmax, ray, specular, info) || hit;
   hit = sphere(vec3(0.0, -0.8, 0.0), 1.0, tmin, tmax, ray, lambertian, info) || hit;
@@ -261,7 +248,7 @@ vec3 cosinePdfDir(in HitInfo info) {
 float lightPdfValue(in HitInfo info, in vec3 dir) {
   Ray ray = Ray(info.pos, dir);
   HitInfo hi;
-  SurfaceInfo si;
+  Material si;
   float t = 1000.0;
   if (rectZX(-1.0, -1.0, 1.0, 1.0,  2.0, 0.001, t, ray, si, hi)) {
     float area = 2.0 * 2.0;
@@ -300,18 +287,18 @@ vec3 trace(in Ray ray) {
   for (int i = 0; i < 10; i++) {
     HitInfo info;
     if (intersect(ray, 0.0001, 1000.0, info)) {
-      if (info.surfaceInfo.reflectType == REFLECT_LAMBERTIAN) {
+      if (info.material.reflectType == REFLECT_LAMBERTIAN) {
         vec3 normal = dot(ray.dir, info.normal) < 0.0 ? info.normal : -info.normal;
         info.normal = normal;
         vec3 dir = mixPdfDir(info);
         float p = mixPdfValue(info, dir);
         if (p <= 0.0) return vec3(0.0);
-        c *= p > 0.0 ? info.surfaceInfo.attenuation * dot(info.normal, dir) / (PI * p) : vec3(0.0);
+        c *= p > 0.0 ? info.material.diffuse * dot(info.normal, dir) / (PI * p) : vec3(0.0);
         ray = Ray(info.pos, dir);
-      } else if (info.surfaceInfo.reflectType == REFLECT_SPECULAR) {
+      } else if (info.material.reflectType == REFLECT_SPECULAR) {
         vec3 normal = dot(ray.dir, info.normal) < 0.0 ? info.normal : -info.normal;
         ray = Ray(info.pos, reflect(ray.dir, normal));
-      } else if(info.surfaceInfo.reflectType == REFLECT_DIELECTRIC) {
+      } else if(info.material.reflectType == REFLECT_DIELECTRIC) {
         vec3 n;
         float eta, cosine;
         if (dot(ray.dir, info.normal) < 0.0) {
@@ -326,8 +313,8 @@ vec3 trace(in Ray ray) {
         vec3 r = refract(normalize(ray.dir), n, eta);
         vec3 dir = r == vec3(0.0) || random() < schlick(cosine, uIndexOfRefraction) ? reflect(ray.dir, n) : r;
         ray = Ray(info.pos, dir);
-      } else if (info.surfaceInfo.reflectType == REFLECT_LIGHT) {
-        c *= dot(info.normal, ray.dir) > 0.0 ? info.surfaceInfo.emission : vec3(0.0);
+      } else if (info.material.reflectType == REFLECT_LIGHT) {
+        c *= dot(info.normal, ray.dir) > 0.0 ? info.material.emission : vec3(0.0);
         return c;
       }
     } else {
@@ -370,9 +357,6 @@ void main() {
   vec3 tar = vec3(0.0, 0.0, 0.0);
   mat3 cam = camera(pos, tar, vec3(0.0, 1.0, 0.0));
 
-  // vec3 pos = vec3(0.0, 0.0, 2.0);
-  // vec3 tar = vec3(0.0, 0.0, 0.0);
-  // mat3 cam = camera(pos, tar, vec3(0.0, 1.0, 0.0));
 
   vec3 c = vec3(0.0);
   for (int i = 1; i <= 1000; i++) {
@@ -408,10 +392,7 @@ void main() {
         aperture: 0.0,
         top: [255, 255, 255],
         bottom: [255, 255, 255],
-        right: [100, 255, 100],
-        left: [255, 100, 100],
-        back: [100, 100, 255],
-        lambertian: [255, 255, 255],
+        lambertian: [255, 87, 51],
         lightColor: [255, 255, 255],
         lightIntensity: 4.0,
         indexOfRefraction: 1.5,
@@ -440,23 +421,6 @@ void main() {
       addToGui(guiCamera, props, 'aperture', function(v) {
         glsl.setUniform('uAperture', '1f', v);
       }, this, 0.0, 1.0);
-      const guiLight = gui.addFolder('Light');
-      addColorToGui(guiLight, props, 'lightColor', function(v) {
-        glsl.setUniform('uLightColor', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
-      });
-      addToGui(guiLight, props, 'lightIntensity', function(v) {
-        glsl.setUniform('uLightIntensity', '1f', v);
-      }, this, 1.0, 10.0);
-      const guiLambertian = gui.addFolder('Lambertian Sphere');
-      addColorToGui(guiLambertian, props, 'lambertian', function(v) {
-        glsl.setUniform('uLambertian', '3fv', [v[0] / 255.0, v[1] / 255.0, v[2] / 255.0]);
-      });
-      // addToGui(guiLambertian, props, 'sphereSize', function(v) {
-      //   glsl.setUniform('uSphereSize', '1f', v);
-      // }, this, 0.5, 10.0);
-      addToGui(gui, props, 'lightSamplingRate', function(v) {
-        glsl.setUniform('uSamplelight', '1f', v)
-      }, this, 0.0, 1.0);
       addToGui(gui, props, 'samples', function(v) {
         glsl.setUniform('uSamples', '1i', v);
       }, this, 1, 1000);
@@ -478,9 +442,6 @@ void main() {
       glsl.setUniform('uAperture', '1f', props.aperture);
       glsl.setUniform('uWallTop', '3fv', [props.top[0] / 255.0, props.top[1] / 255.0, props.top[2] / 255.0]);
       glsl.setUniform('uWallBottom', '3fv', [props.bottom[0] / 255.0, props.bottom[1] / 255.0, props.bottom[2] / 255.0]);
-      glsl.setUniform('uWallRight', '3fv', [props.right[0] / 255.0, props.right[1] / 255.0, props.right[2] / 255.0]);
-      glsl.setUniform('uWallLeft', '3fv', [props.left[0] / 255.0, props.left[1] / 255.0, props.left[2] / 255.0]);
-      glsl.setUniform('uWallBack', '3fv', [props.back[0] / 255.0, props.back[1] / 255.0, props.back[2] / 255.0]);
       glsl.setUniform('uLambertian', '3fv', [props.lambertian[0] / 255.0, props.lambertian[1] / 255.0, props.lambertian[2] / 255.0]);
       glsl.setUniform('uLightColor', '3fv', [props.lightColor[0] / 255.0, props.lightColor[1] / 255.0, props.lightColor[2] / 255.0]);
       glsl.setUniform('uLightIntensity', '1f', props.lightIntensity);

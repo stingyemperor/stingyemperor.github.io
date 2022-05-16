@@ -1,0 +1,16 @@
+0: ambient
+1: subsurface
+2: bleeding
+3: caustics
+4: default
+
+removing:
+reflectType 3 (mirror)
+backgroundColor
+skybottomcolor
+skytopcolor
+sphere 1
+
+added:
+uSkyColor (baby blue)
+uFinalGatheringVersion

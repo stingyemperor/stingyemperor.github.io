@@ -53,6 +53,7 @@
         uniform vec3 uLambertianColor;
         uniform vec3 uMetalColor;
         uniform float uFuzziness;
+        uniform float uIndexOfRefraction;
         uniform int uSamples;
         uniform sampler2D uRandomTexture;
         uniform sampler2D uFloorTexture;
@@ -63,6 +64,7 @@
         uniform float uLightZ;
         uniform samplerCube uSkyBox;
         uniform mat4 uViewDirectionProjectionInverse;
+        uniform int uFinalGatheringVersion; // 0 for ambient, 1 for subsurface, 2 for color bleeding, 3 for caustics
         
         in vec4 vPosition;
         out vec4 fragmentColor;
@@ -891,10 +893,12 @@
         lambertianColor: [220, 100, 100],
         metalColor: [255, 255, 255],
         fuzziness: 0.0,
+        indexOfRefraction: 1.5,
         samples: 20,
         lightX:0.0,
         lightY:0.0,
         lightZ:0.0,
+        animation: true,
         ambientOcclusion: false,
         subsurfaceScattering: false,
         colorBleeding: false,
@@ -929,9 +933,50 @@
         glsl.setUniform('uLightZ', '1f', v);
       }, this, -50, 50);
 
+      const guiGlass = gui.addFolder('Glass Sphere');
+      addToGui(guiGlass, props, 'indexOfRefraction', function(v) {
+        glsl.setUniform('uIndexOfRefraction', '1f', v);
+      }, this, 0.0, 3.0);
+
+      // adding switches for project 9
+      const guiIllumation = gui.addFolder('Image Based Illumination');
+      addToGui(guiIllumation, props, 'ambientOcclusion', function(v) {
+        if (v) {
+            console.log('ambient occlusion');
+            glsl.setUniform('uFinalGatheringVersion', '1i', 0);
+        }
+      }, this);
+      addToGui(guiIllumation, props, 'subsurfaceScattering', function(v) {
+          if (v) {
+              console.log('subsurface scattering');
+              glsl.setUniform('uFinalGatheringVersion', '1i', 1);
+          }
+      }, this);
+      addToGui(guiIllumation, props, 'colorBleeding', function(v) {
+          if (v) {
+              console.log('color bleeding');
+              glsl.setUniform('uFinalGatheringVersion', '1i', 2);
+          }
+      }, this);
+      addToGui(guiIllumation, props, 'caustics', function(v) {
+          if (v) {
+              console.log('caustics');
+              glsl.setUniform('uFinalGatheringVersion', '1i', 3);
+          }
+      }, this);
+
       addToGui(gui, props, 'samples', function(v) {
         glsl.setUniform('uSamples', '1i', v);
       }, this, 1, 100);
+
+      var funcToStartOrStopAnimation = function(v) {
+        if (v && !glsl.isAnimating()) {
+          glsl.start();
+        } else if (!v && glsl.isAnimating()) {
+          glsl.stop();
+        }
+      };
+      addToGui(gui, props, 'animation', funcToStartOrStopAnimation, this);
 
       glsl.setUniform('uCameraPosition', '1f', props.cameraPosition);
       glsl.setUniform('uFieldOfView', '1f', props.fieldOfView);
@@ -945,7 +990,9 @@
       glsl.setUniform('uLambertianColor', '3fv', [props.lambertianColor[0] / 255.0, props.lambertianColor[1] / 255.0, props.lambertianColor[2] / 255.0]);
       glsl.setUniform('uMetalColor', '3fv', [props.metalColor[0] / 255.0, props.metalColor[1] / 255.0, props.metalColor[2] / 255.0]);
       glsl.setUniform('uFuzziness', '1f', props.fuzziness);
+      glsl.setUniform('uIndexOfRefraction', '1f', props.indexOfRefraction);
       glsl.setUniform('uSamples', '1i', props.samples);
+      glsl.setUniform('uFinalGatheringVersion', '1i', 4);
       glsl.setTexture('uRandomTexture', './textures/rgb_noise.bmp');
       glsl.setTexture('uFloorTexture', './textures/broken_wall_diff_2k.jpg');
       glsl.setTexture('uFloorNormal', './textures/broken_wall_nor_gl_2k.png');

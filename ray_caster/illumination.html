@@ -48,8 +48,7 @@
         uniform float uAperture;
         uniform vec3 uGroundColor1;
         uniform vec3 uGroundColor2;
-        uniform vec3 uSkyTopColor;
-        uniform vec3 uSkyBottomColor;
+        uniform vec3 uSkyColor;
         uniform vec3 uLambertianColor;
         uniform vec3 uMetalColor;
         uniform float uFuzziness;
@@ -63,6 +62,7 @@
         uniform float uLightZ;
         uniform samplerCube uSkyBox;
         uniform mat4 uViewDirectionProjectionInverse;
+        uniform int uFinalGatheringVersion; // 0 for ambient, 1 for subsurface, 2 for color bleeding, 3 for caustics
         
         in vec4 vPosition;
         out vec4 fragmentColor;
@@ -199,9 +199,9 @@
             return vec3(x, y, z);
         }
         
-                                                        //============================================================================
-                                                        //Camera
-                                                        //============================================================================
+        //============================================================================
+        //Camera
+        //============================================================================
         
         mat3 camera(in vec3 pos, in vec3 tar, in vec3 up) {
             vec3 cz = normalize(tar - pos);
@@ -210,13 +210,9 @@
             return mat3(cx, cy, cz);
         }
         
-        vec3 backgroundColor(in vec3 dir) {
-            return mix(uSkyBottomColor, uSkyTopColor, dir.y * 0.5 + 0.5);
-        }
-        
-                                                        //============================================================================
-                                                        //Ray
-                                                        //============================================================================
+        //============================================================================
+        //Ray
+        //============================================================================
         
         void ray(in mat3 cam, in vec3 origin, in vec2 uv, in float vfov, in float aspect, inout vec3 rpos, inout vec3 rdir) {
             float theta = vfov * PI / 180.0;
@@ -275,7 +271,7 @@
             if(t0 < tmin || t0 > tmax)
                 return false;
         
-                                                                              // We have a hit -- output results.
+            // We have a hit -- output results.
             tmax = t0;
             info.pos = pos + t0 * dir;
             vec2 uv = planeMap(info.pos);
@@ -416,7 +412,7 @@
         
         const float POS_RADIUS = 3.0;
         const vec3 SPHERE_POS1 = vec3(POS_RADIUS * cos(0.0), 2.0, POS_RADIUS * sin(0.0));
-        const vec3 SPHERE_POS2 = vec3(POS_RADIUS * cos(TWO_PI / 3.0), 2.0, POS_RADIUS * sin(TWO_PI / 3.0));
+        const vec3 SPHERE_POS2 = vec3(POS_RADIUS * -cos(TWO_PI / 3.0), 2.0, POS_RADIUS * sin(TWO_PI / 3.0));
         const vec3 SPHERE_POS3 = vec3(POS_RADIUS * cos(TWO_PI / 3.0 * 2.0), 2.0, POS_RADIUS * sin(TWO_PI / 3.0 * 2.0));
         const vec3 SPHERE_POS4 = vec3(0.0, 0.0, 0.0);
         const float SPHERE_RADIUS = 2.0;
@@ -550,50 +546,41 @@
         }
 
         
-                                                        //============================================================================
-                                                        //Intersection
-                                                        //============================================================================
+        //============================================================================
+        //Intersection
+        //============================================================================
+        // for objects
         bool intersect(in vec3 pos, in vec3 dir, inout HitInfo info, Light light) {
             float tmin = 0.00001;
             float tmax = 10000.0;
             bool hit = false;
-            hit = sphere(pos, dir, SPHERE_POS1, SPHERE_RADIUS, 1, tmin, tmax, info) || hit;
-            hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS, 2, tmin, tmax, info) || hit;
-            hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, 3, tmin, tmax, info) || hit;
-                    hit = IntersectPlane(0.0, 1.0, 0.0, 0.0, 0, pos, dir, tmin, tmax, info) || hit;
-            //hit = rectZX(-8.0, -5.0, 8.0, 5.0, 0.0, tmin, tmax, pos, dir, 0, info) || hit;
+            hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, 1, tmin, tmax, info) || hit;
+            hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS, 1, tmin, tmax, info) || hit;
+            hit = IntersectPlane(0.0, 1.0, 0.0, 0.0, 0, pos, dir, tmin, tmax, info) || hit;
         
             vec3 v0 = vec3(-5.0, 5.0, 5.0);
             vec3 v1 = vec3(-5.0, -5.0, 5.0);
             vec3 v2 = vec3(5.0, -5.0, 5.0);
-                                                    //hit = triangle(pos, dir, v0, v1, v2, info, 5) || hit;
-                                                                    //hit = plane(pos, dir, -SPHERE_RADIUS, 0, tmin, tmax, info) || hit;
             return hit;
         }
         
+        // for shadows
         bool intersect(in vec3 pos, in vec3 dir, float tMax) {
             float tmin = 0.00001;
-                                                                    //float tmax = 10000.0;
             bool hit = false;
-            hit = sphere(pos, dir, SPHERE_POS1, SPHERE_RADIUS, tmin, tMax) || hit;
             hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS, tmin, tMax) || hit;
             hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, tmin, tMax) || hit;
-                    hit = IntersectPlane(0.0, 1.0, 0.0, 0.0, 0, pos, dir, tmin, tMax) || hit;
-            //hit = rectZX(-8.0, -5.0, 8.0, 5.0, 0.0, tmin, tMax, pos, dir) || hit;
+            hit = IntersectPlane(0.0, 1.0, 0.0, 0.0, 0, pos, dir, tmin, tMax) || hit;
         
             vec3 v0 = vec3(-5.0, 5.0, 5.0);
             vec3 v1 = vec3(-5.0, -5.0, 5.0);
             vec3 v2 = vec3(5.0, -5.0, 5.0);
-        
-                                                    //hit = triangle(pos, dir, v0, v1, v2);
-        
-                                                                    //hit = plane(pos, dir, -SPHERE_RADIUS, 0, tmin, tmax, info) || hit;
             return hit;
         }
         
-                                                        //============================================================================
-                                                        //Refraction
-                                                        //============================================================================
+        //============================================================================
+        //Refraction
+        //============================================================================
         
         float schlick(float cosine, float ref) {
             float r0 = (1.0 - ref) / (1.0 + ref);
@@ -601,9 +588,9 @@
             return r0 + (1.0 - r0) * pow((1.0 - cosine), 5.0);
         }
         
-                                                        //============================================================================
-                                                        //Lighting
-                                                        //============================================================================
+        //============================================================================
+        //Lighting
+        //============================================================================
         
         Light light() {
         
@@ -725,17 +712,16 @@
             return mirror;
         }
         
-                                                        //============================================================================
-                                                        //Ray Tracer
-                                                        //============================================================================
+        //============================================================================
+        //Ray Tracer
+        //============================================================================
         vec3 trace(in vec3 pos, in vec3 dir, in Light light) {
         
             HitInfo info;
             vec3 c = vec3(0.5);
         
-            for(int i = 0; i < 3; i++) {
+            for(int i = 0; i < 1; i++) { // why 3 times? changed to 1 time
                 if(intersect(pos, dir, info, light)) {
-                                                                              //pos = info.pos;
                     bool shadow = false;
                     vec3 L = normalize(light.position - info.pos);
                     vec3 N = normalize(info.normal);
@@ -746,7 +732,7 @@
                     vec3 shadowRayDirection = L;
                     float dist = length(light.position - info.pos);
         
-                    if(info.reflectType == 5) {
+                    if(info.reflectType == 5) { // 
                         Material sphere = sphere(uLambertianColor);
         
                         intense = intensityAt(light, info, shadow, pos, sphere, c);
@@ -763,82 +749,61 @@
         
                         intense = intensityAt(light, info, shadow, pos, plane, c);
                         c = c * intense;
-                                //c = phongShading(N, L, V, light, plane, info,shadow)*intense;
-                        //dir = info.normal + random_in_unit_sphere();
-                        
-               
-        
+
                     } else if(info.reflectType == 1) { // lambertian
-        
-                                                                                //vec2 uv = sphereMap(info.pos,SPHERE_POS1,SPHERE_RADIUS);
-                                                                               // vec3 tempS = texture(uSphereEnvironment, uv).xyz;
-        
+                        // ONLY ONE USED FOR PROJECT 9
+                        
                         Material sphere = sphere(uLambertianColor);
-                        intense = intensityAt(light, info, shadow, pos, sphere, c);
-                        c = c * intense;
-                                //c = phongShading(N, L, V, light, sphere, info,shadow)*intense;
-        
-                        //dir = info.normal + random_in_unit_sphere();
+
+                        if (uFinalGatheringVersion == 4) { // default
+                            intense = intensityAt(light, info, shadow, pos, sphere, c);
+                            c = c * intense;
+                            continue;
+                        }
+
+                        else if (uFinalGatheringVersion == 0) { // if ambient shading
+                            // iterate through all colors
+                        }
+                        // update color of the pixel
+                        // based on slides from final gathering
+                        // TODO: compute color ci
+
+                        // compute weight of ray
+                        // float costheta = dot(nh, nhprime);
+
+                        // // update color of the pixel
+                        // wc = wc + costheta * ci;
+                        // w = w + costheta;
+
                     } else if(info.reflectType == 2) { // specular
         
                         Material mirror = mirror();
         
                         intense = intensityAt(light, info, shadow, pos, mirror, c);
-                        c = c * intense;
-        
-                                //c = phongShading(N, L, V, light, mirror, info,shadow)*intense;
+                        c = c * intense;        
                         dir = normalize(reflect(dir, info.normal) + uFuzziness * random_in_unit_sphere());
                         if(dot(info.normal, dir) < 0.0)
                             break;
-                    } else if(info.reflectType == 3) { // dielectric
-                        vec3 n;
-                        float eta, cosine;
-                        float prob;
-                        Material mirror = mirror();
-                        if(dot(dir, info.normal) < 0.0) {
-                            n = info.normal;
-                            eta =  1.0/uIndexOfRefraction;
-                            cosine = -dot(dir, info.normal) / length(dir);
-                        } else {
-                           
-                            n = -info.normal;
-                            eta = uIndexOfRefraction;
-                            cosine = uIndexOfRefraction * dot(dir, info.normal) / length(dir);
-                        }
-                        vec3 r = refract(normalize(dir), normalize(n), eta);
-                        bool isRefracted = r.x!=0.0|| r.y!=0.0 ||r.z!=0.0;
-                        if(isRefracted){
-                            prob = schlick(cosine, uIndexOfRefraction);
-                        }
-
-                        if(random()<prob){
-                            intense = intensityAt(light, info, shadow, pos, mirror, c);
-                            c = c * intense;
-                            dir = normalize(reflect(dir, n));
-                        }
-                        else{
-
-                            dir = normalize(r);
-                        }
-                        //dir= r;
-                        //dir = r == vec3(0.0) || random() < schlick(cosine, uIndexOfRefraction) ? reflect(dir, n) : r;
                     }
-                } else {
-                    vec3 pp;
-                    bool test = envSphere(pos, dir, SPHERE_POS4, 20.0, 0.00001, 1000.0, pp);
-                    vec2 uv = sphereMap(pp, SPHERE_POS4, 20.0);
-                    vec3 tempS = texture(uSphereEnvironment, uv).xyz;
-                                                                            //c *= backgroundColor(dir);
-                    c = tempS;
+                } else { // surrounding environment ("infinite sphere")
+                    // vec3 pp;
+                    // bool test = envSphere(pos, dir, SPHERE_POS4, 20.0, 0.00001, 1000.0, pp);
+                    // vec2 uv = sphereMap(pp, SPHERE_POS4, 20.0);
+                    // if (uFinalGatheringVersion == 0) { // white for ambient
+                        c = vec3(1, 1, 1); 
+                    // }
+                    // else { // baby blue for all other gatherings
+                        // c = uSkyColor;
+                    // }
                     break;
                 }
             }
             return c;
         }
         
-                                                        //============================================================================
-                                                        //Main
-                                                        //============================================================================
+        //============================================================================
+        //Main
+        //============================================================================
         
         void main() {
             vec2 m = uMouse / uResolution.y;
@@ -886,8 +851,6 @@
         aperture: 0.0,
         groundColor1: [0, 0, 0],
         groundColor2: [255, 255, 255],
-        skyTopColor: [128, 128, 255],
-        skyBottomColor: [255, 255, 255],
         lambertianColor: [220, 100, 100],
         metalColor: [255, 255, 255],
         fuzziness: 0.0,
@@ -929,6 +892,45 @@
         glsl.setUniform('uLightZ', '1f', v);
       }, this, -50, 50);
 
+      // adding switches for project 9
+      const guiIllumation = gui.addFolder('Image Based Illumination');
+      addToGui(guiIllumation, props, 'ambientOcclusion', function(v) {
+        if (v) {
+            console.log('ambient occlusion');
+            glsl.setUniform('uFinalGatheringVersion', '1i', 0);
+        }
+        else {
+            glsl.setUniform('uFinalGatheringVersion', '1i', 4);
+        }
+      }, this);
+      addToGui(guiIllumation, props, 'subsurfaceScattering', function(v) {
+        if (v) {
+            console.log('subsurface scattering');
+            glsl.setUniform('uFinalGatheringVersion', '1i', 1);
+        }
+        else {
+        glsl.setUniform('uFinalGatheringVersion', '1i', 4);
+        }
+      }, this);
+      addToGui(guiIllumation, props, 'colorBleeding', function(v) {
+        if (v) {
+            console.log('color bleeding');
+            glsl.setUniform('uFinalGatheringVersion', '1i', 2);
+        }
+        else {
+            glsl.setUniform('uFinalGatheringVersion', '1i', 4);
+        }
+      }, this);
+      addToGui(guiIllumation, props, 'caustics', function(v) {
+        if (v) {
+            console.log('caustics');
+            glsl.setUniform('uFinalGatheringVersion', '1i', 3);
+        }
+        else {
+            glsl.setUniform('uFinalGatheringVersion', '1i', 4);
+        }
+      }, this);
+
       addToGui(gui, props, 'samples', function(v) {
         glsl.setUniform('uSamples', '1i', v);
       }, this, 1, 100);
@@ -940,12 +942,12 @@
       glsl.setUniform('uAperture', '1f', props.aperture);
       glsl.setUniform('uGroundColor1', '3fv', [props.groundColor1[0] / 255.0, props.groundColor1[1] / 255.0, props.groundColor1[2] / 255.0]);
       glsl.setUniform('uGroundColor2', '3fv', [props.groundColor2[0] / 255.0, props.groundColor2[1] / 255.0, props.groundColor2[2] / 255.0]);
-      glsl.setUniform('uSkyTopColor', '3fv', [props.skyTopColor[0] / 255.0, props.skyTopColor[1] / 255.0, props.skyTopColor[2] / 255.0]);
-      glsl.setUniform('uSkyBottomColor', '3fv', [props.skyBottomColor[0] / 255.0, props.skyBottomColor[1] / 255.0, props.skyBottomColor[2] / 255.0]);
+      glsl.setUniform('uSkyColor', '3fv', [54.0/255.0, 81.0/255.0, 94.0/255.0]); // baby blue :)
       glsl.setUniform('uLambertianColor', '3fv', [props.lambertianColor[0] / 255.0, props.lambertianColor[1] / 255.0, props.lambertianColor[2] / 255.0]);
       glsl.setUniform('uMetalColor', '3fv', [props.metalColor[0] / 255.0, props.metalColor[1] / 255.0, props.metalColor[2] / 255.0]);
       glsl.setUniform('uFuzziness', '1f', props.fuzziness);
       glsl.setUniform('uSamples', '1i', props.samples);
+      glsl.setUniform('uFinalGatheringVersion', '1i', 4);
       glsl.setTexture('uRandomTexture', './textures/rgb_noise.bmp');
       glsl.setTexture('uFloorTexture', './textures/broken_wall_diff_2k.jpg');
       glsl.setTexture('uFloorNormal', './textures/broken_wall_nor_gl_2k.png');

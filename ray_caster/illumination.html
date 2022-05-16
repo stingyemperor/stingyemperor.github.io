@@ -563,6 +563,20 @@
             vec3 v2 = vec3(5.0, -5.0, 5.0);
             return hit;
         }
+
+        // for final gathering (no light parameter)
+        bool intersect(in vec3 pos, in vec3 dir, inout HitInfo info) {
+            float tmin = 0.00001;
+            float tmax = 10000.0;
+            bool hit = false;
+            hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, 1, tmin, tmax, info) || hit;
+            hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS, 1, tmin, tmax, info) || hit;
+        
+            vec3 v0 = vec3(-5.0, 5.0, 5.0);
+            vec3 v1 = vec3(-5.0, -5.0, 5.0);
+            vec3 v2 = vec3(5.0, -5.0, 5.0);
+            return hit;
+        }
         
         // for shadows
         bool intersect(in vec3 pos, in vec3 dir, float tMax) {
@@ -717,6 +731,22 @@
         //============================================================================
         vec3 trace(in vec3 pos, in vec3 dir, in Light light) {
         
+            // for now, hardcode geodesic sphere
+            vec3 geodesic[12];
+            geodesic[0] = vec3(0.525731, 0, 0.850651);
+            geodesic[1] = vec3(0, 0.850651, 0.525731);
+            geodesic[2] = vec3(-0.525731, 0, 0.850651);
+            geodesic[3] = vec3(0, -0.850651, 0.525731);
+            geodesic[4] = vec3(0.525731, 0, -0.850651);
+            geodesic[5] = vec3(0, -0.850651, -0.525731);
+            geodesic[6] = vec3(-0.525731, 0, -0.850651);
+            geodesic[7] = vec3(0, 0.850651, -0.525731);
+            geodesic[8] = vec3(0.850651, -0.525731, 0);
+            geodesic[9] = vec3(0.850651, 0.525731, 0);
+            geodesic[10] = vec3(-0.850651, 0.525731, 0);
+            geodesic[11] = vec3(-0.850651, -0.525731, 0);
+
+
             HitInfo info;
             vec3 c = vec3(0.5);
         
@@ -754,26 +784,55 @@
                         // ONLY ONE USED FOR PROJECT 9
                         
                         Material sphere = sphere(uLambertianColor);
+                        intense = intensityAt(light, info, shadow, pos, sphere, c);
+                        c = c * intense;
 
                         if (uFinalGatheringVersion == 4) { // default
-                            intense = intensityAt(light, info, shadow, pos, sphere, c);
-                            c = c * intense;
                             continue;
                         }
 
-                        else if (uFinalGatheringVersion == 0) { // if ambient shading
-                            // iterate through all colors
-                        }
-                        // update color of the pixel
                         // based on slides from final gathering
-                        // TODO: compute color ci
+                        // iterate through different directions
+                        HitInfo info2;
+                        vec3 wc = c;
+                        float w = 1.0;
+                        for (int i = 0; i < 12; ++i) {
+                            // Nh denote unit shading normal (N?)
+                            vec3 nplusgeo = N + geodesic[i];
+                            vec3 nhprime = (nplusgeo)/length(nplusgeo);
 
-                        // compute weight of ray
-                        // float costheta = dot(nh, nhprime);
+                            // compute weight of ray
+                            float costheta = dot(N, nhprime);
+                        
+                            // shoot ray and look for hit from info.pos in direction of nhprime
+                            bool gathering_intersect = intersect(info.pos, nhprime, info2);
 
-                        // // update color of the pixel
-                        // wc = wc + costheta * ci;
-                        // w = w + costheta;
+                            // compute color ci
+                            vec3 ci;
+                            if (uFinalGatheringVersion == 0) { // if ambient shading
+                                if (gathering_intersect) { // if hits object, black
+                                    ci = vec3(0.0);
+                                }
+                                else { // if hits infinite sphere, white
+                                    ci = vec3(1.0);
+                                }
+                            }
+                            // else if (uFinalGatheringVersion == 0) { // if ambient shading
+                            //     if (gathering_intersect) { // if hits object, black
+
+                            //     }
+                            //     else { // if hits infinite sphere, white
+
+                            //     }
+                            // }
+
+                            
+                            // update color of the pixel
+                            wc = wc + (costheta * ci);
+                            w = w + costheta;
+                        }
+
+                        c = wc / w;
 
                     } else if(info.reflectType == 2) { // specular
         

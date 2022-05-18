@@ -32,9 +32,9 @@
         fragmentShaderSource: `#version 300 es
         precision mediump float;
         
-                                                        //============================================================================
-                                                        //uniforms.
-                                                        //============================================================================
+        //============================================================================
+        //uniforms.
+        //============================================================================
         
         uniform float uTime;
         uniform vec2 uResolution;
@@ -113,9 +113,9 @@
             vec3[NUM_OF_FACES] normals;
             vec2[100] st;
         };
-                                                        //============================================================================
-                                                        //Randomness.
-                                                        //============================================================================
+        //============================================================================
+        //Randomness.
+        //============================================================================
         
         float random(float x) {
             return fract(sin(x) * 4245.324);
@@ -132,7 +132,7 @@
         float randseed = 0.423;
         
         float random() {
-            randseed += 0.01;
+            randseed += 1.0;
             return random(randseed);
         }
         
@@ -198,6 +198,22 @@
             float y = sin(phi) * sqrt(r2);
             return vec3(x, y, z);
         }
+
+        // project 9: calculate rotation of vector given theta
+        // uses rodrigues' rotation formula
+        // theta is in radians
+        mat3 calculateRotationMatrix(float _theta, vec3 _rotdir) {
+            // rodrigues' rotation formula
+            // float dirx = _rotdir.x;
+            // float diry = _rotdir.y;
+            // float dirz = _rotdir.z;
+            float costheta = cos(_theta);
+            float sintheta = sin(_theta);
+            vec3 row1 = vec3(costheta + (_rotdir.x * _rotdir.x) * (1.0 - costheta), _rotdir.x * _rotdir.y * (1.0 - costheta) - _rotdir.z * sintheta, _rotdir.y * sintheta + _rotdir.x * _rotdir.z * (1.0 - costheta));
+            vec3 row2 = vec3(_rotdir.z * sintheta + _rotdir.x * _rotdir.y * (1.0-costheta), costheta+_rotdir.y*_rotdir.y*(1.0-costheta), -_rotdir.x*sintheta+_rotdir.y*_rotdir.z*(1.0-costheta));
+            vec3 row3 = vec3(-_rotdir.y*sintheta+_rotdir.x*_rotdir.z*(1.0-costheta),_rotdir.x*sintheta+_rotdir.y*_rotdir.z*(1.0-costheta),costheta+_rotdir.z*_rotdir.z*(1.0-costheta));
+            return mat3(row1, row2, row3);
+        }
         
         //============================================================================
         //Camera
@@ -243,9 +259,7 @@
                 info.pos = pos + tt * dir;
         
                 vec2 uv = planeMap(info.pos);
-                // vec3 tempN = texture(uFloorNormal, uv).xyz;
                 info.normal = vec3(0.0, 1.0, 0.0);
-                // info.normal = tempN;
                 info.reflectType = reflectType;
                 info.u = uv.x;
                 info.v = uv.y;
@@ -419,9 +433,9 @@
         const vec3 SPHERE_POS4 = vec3(0.0, 0.0, 0.0);
         const float SPHERE_RADIUS = 2.0;
         
-                                                        //============================================================================
-                                                        //Triangle
-                                                        //============================================================================
+        //============================================================================
+        //Triangle
+        //============================================================================
         
         bool triangle(in vec3 pos, in vec3 dir, vec3 v0, vec3 v1, vec3 v2, out HitInfo info, in int reflectType) {
         
@@ -672,10 +686,11 @@
                     sum = sum + NdotL * material.diffuse;
                     sum = sum + RfotVpown * material.specular;
         
-                    if(!pointInShadow(lightPosition, info)) {
-                        total = total + 1.0;
-                        shadow = true;
-                    }
+                    // comment out next line for no shadows
+                    // if(!pointInShadow(lightPosition, info)) {
+                    total = total + 1.0;
+                    //     shadow = true;
+                    // }
                 }
             }
         
@@ -683,22 +698,9 @@
             return total / float(light.samples);
         }
         
-        vec3 phongShading(vec3 N, vec3 L, vec3 V, Light light, Material material, HitInfo info, bool shadow) {
-        
-                    // if(shadow) {
-                    //     return material.ambient ;
-                    // }
-            vec3 R = reflect(-L, N);
-            float NdotL = max(dot(N, L), 0.0);
-            float RdotV = max(dot(R, V), 0.0);
-            float RfotVpown = (RdotV == 0.0) ? 0.0 : pow(RdotV, material.shininess);
-        
-            return (material.ambient + NdotL * material.diffuse + RfotVpown * material.specular) * light.color;
-        }
-        
-                                                        //============================================================================
-                                                        //Materials
-                                                        //============================================================================
+        //============================================================================
+        //Materials
+        //============================================================================
         Material plane(vec3 diffuse) {
             Material plane;
             plane.diffuse = diffuse;
@@ -764,24 +766,13 @@
                     vec3 shadowRayDirection = L;
                     float dist = length(light.position - info.pos);
         
-                    if(info.reflectType == 5) { // 
-                        Material sphere = sphere(uSphere1Color);
-        
-                        intense = intensityAt(light, info, shadow, pos, sphere, c);
-                        c = c * intense;
-                    }
-        
                     if(info.reflectType == 0) { // ground
-        
                         vec2 uv;
                         uv.x = info.u;
                         uv.y = info.v;
-                        // vec3 tempC = texture(uFloorTexture, uv).xyz;
                         Material plane = plane(uGroundColor);
-        
                         intense = intensityAt(light, info, shadow, pos, plane, c);
                         c = c * intense;
-
                     } else if(info.reflectType == 1 || info.reflectType == 2) { // lambertian
                         // ONLY ONE USED FOR PROJECT 9
                         if (info.reflectType == 1) { // if sphere 1, apply its color
@@ -792,90 +783,99 @@
                         else { // if sphere 2, apply its color
                             Material sphere = sphere(uSphere2Color);
                             intense = intensityAt(light, info, shadow, pos, sphere, c);
-                            c = c * intense;                        }
+                            c = c * intense;                        
+                        }
+                    }
+
+                    if (uFinalGatheringVersion == 4) { // default
+                        continue;
+                    }
+
+                    // based on slides from final gathering
+                    // iterate through different directions
+                    HitInfo info2;
+                    vec3 wc = c;
+                    float w = 1.0;
+                    // calculate rot matrix of random angle about the normal
+                    // pseudo-random based on seed of location! (random returns between 0 and 1)
+                    float theta = random(info.pos.xy) * 2.0 * PI;
+                    mat3 rotmatrix = calculateRotationMatrix(theta, N);
+                    vec3 rotated_geo; // for use later
+                    for (int i = 0; i < 12; ++i) {
+                        // calculate rotation of geodesic (could go in function but probs too much memory usage tbh)
+                        rotated_geo = geodesic[i] * rotmatrix;
+
+                        // Nh denote unit shading normal (N?)
+                        vec3 nplusr = N + rotated_geo;
+                        vec3 nhprime = (nplusr)/length(nplusr);
+
+                        // compute weight of ray
+                        float costheta = dot(N, nhprime);
+
+                        // if ray goes into the sphere, skip
+                        if (costheta < 0.0) continue;
+                    
+                        // shoot ray and look for hit from info.pos in direction of nhprime
+                        bool gathering_intersect = intersect(info.pos, nhprime, info2);
+
+                        // compute color ci
+                        vec3 ci;
+                        if (uFinalGatheringVersion == 0) { // if ambient shading
+                            if (gathering_intersect) { // if hits object, black
+                                ci = vec3(0.0);
+                            }
+                            else { // if hits infinite sphere, white
+                                ci = vec3(1.0);
+                            }
+                        }
+                        else if (uFinalGatheringVersion == 1) { // if environment illumination/subsurface
+                            if (gathering_intersect) { // if hits object, black
+                                ci = vec3(0.0);
+                            }
+                            else { // if hits infinite sphere, color of sphere
+                                ci = uSkyColor;
+                            }
+                        }
+                        else if (uFinalGatheringVersion == 2) { // if color bleeding
+                            if (gathering_intersect) { // if hits object, diffuse color of object
+                                if (info2.reflectType == 1) { // if another sphere
+                                    ci = uSphere1Color;
+                                }
+                                else if (info2.reflectType == 2) { // if sphere 2
+                                    ci = uSphere2Color;
+                                }
+                                else if (info2.reflectType == 0) { // if ground
+                                    vec2 uv;
+                                    uv.x = info2.u;
+                                    uv.y = info2.v;
+                                    ci = texture(uFloorTexture, uv).xyz;
+                                }
+                                else { // should never reach here :)
+                                    continue;
+                                }
+                            }
+                            else { // if hits infinite sphere, color of sphere
+                                ci = uSkyColor;
+                            }
+                        }
+                        else if (uFinalGatheringVersion == 3) { // if caustics
+                            if (gathering_intersect) { // if hits object, refractive or specular color of object
+                                // TODO: this one kinda hard
+                                // go through the object if refractive and find color of next object
+                                // otherwise, use specular color
+                            }
+                            else { // if hits infinite sphere, color of sphere
+                                ci = uSkyColor;
+                            }
                         }
 
-                        if (uFinalGatheringVersion == 4) { // default
-                            continue;
-                        }
-
-                        // based on slides from final gathering
-                        // iterate through different directions
-                        HitInfo info2;
-                        vec3 wc = c;
-                        float w = 1.0;
-                        for (int i = 0; i < 12; ++i) {
-                            // Nh denote unit shading normal (N?)
-                            vec3 nplusr = N + geodesic[i];
-                            vec3 nhprime = (nplusr)/length(nplusr);
-
-                            // compute weight of ray
-                            float costheta = dot(N, nhprime);
-
-                            // if ray goes into the sphere, skip
-                            if (costheta < 0.0) continue;
                         
-                            // shoot ray and look for hit from info.pos in direction of nhprime
-                            bool gathering_intersect = intersect(info.pos, nhprime, info2);
+                        // update color of the pixel
+                        wc = wc + (costheta * ci);
+                        w = w + costheta;
+                    }
+                    c = wc / w;
 
-                            // compute color ci
-                            vec3 ci;
-                            if (uFinalGatheringVersion == 0) { // if ambient shading
-                                if (gathering_intersect) { // if hits object, black
-                                    ci = vec3(0.0);
-                                }
-                                else { // if hits infinite sphere, white
-                                    ci = vec3(1.0);
-                                }
-                            }
-                            else if (uFinalGatheringVersion == 1) { // if environment illumination/subsurface
-                                if (gathering_intersect) { // if hits object, black
-                                    ci = vec3(0.0);
-                                }
-                                else { // if hits infinite sphere, color of sphere
-                                    ci = uSkyColor;
-                                }
-                            }
-                            else if (uFinalGatheringVersion == 2) { // if color bleeding
-                                if (gathering_intersect) { // if hits object, diffuse color of object
-                                    if (info2.reflectType == 1) { // if another sphere
-                                        ci = uSphere1Color;
-                                    }
-                                    else if (info2.reflectType == 2) { // if sphere 2
-                                        ci = uSphere2Color;
-                                    }
-                                    else if (info2.reflectType == 0) { // if ground
-                                        vec2 uv;
-                                        uv.x = info2.u;
-                                        uv.y = info2.v;
-                                        ci = texture(uFloorTexture, uv).xyz;
-                                    }
-                                    else { // should never reach here :)
-                                        continue;
-                                    }
-                                }
-                                else { // if hits infinite sphere, color of sphere
-                                    ci = uSkyColor;
-                                }
-                            }
-                            else if (uFinalGatheringVersion == 3) { // if caustics
-                                if (gathering_intersect) { // if hits object, refractive or specular color of object
-                                    // TODO: this one kinda hard
-                                    // go through the object if refractive and find color of next object
-                                    // otherwise, use specular color
-                                }
-                                else { // if hits infinite sphere, color of sphere
-                                    ci = uSkyColor;
-                                }
-                            }
-
-                            
-                            // update color of the pixel
-                            wc = wc + (costheta * ci);
-                            w = w + costheta;
-                        }
-
-                        c = wc / w;
                 } else { // surrounding environment ("infinite sphere")
                     // vec3 pp;
                     // bool test = envSphere(pos, dir, SPHERE_POS4, 20.0, 0.00001, 1000.0, pp);

@@ -1,5 +1,5 @@
 0: ambient
-1: subsurface
+1: env illumination
 2: bleeding
 3: caustics
 4: default
@@ -10,7 +10,12 @@ backgroundColor
 skybottomcolor
 skytopcolor
 sphere 1
+texture normals
 
 added:
 uSkyColor (baby blue)
 uFinalGatheringVersion
+final gathering code
+normals changed to 0,1,0
+uGroundColor
+uSphere2Color

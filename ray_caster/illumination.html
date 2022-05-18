@@ -46,10 +46,10 @@
         uniform float uFieldOfView;
         uniform float uFocus;
         uniform float uAperture;
-        uniform vec3 uGroundColor1;
-        uniform vec3 uGroundColor2;
         uniform vec3 uSkyColor;
-        uniform vec3 uLambertianColor;
+        uniform vec3 uSphere1Color;
+        uniform vec3 uGroundColor;
+        uniform vec3 uSphere2Color;
         uniform vec3 uMetalColor;
         uniform float uFuzziness;
         uniform int uSamples;
@@ -62,7 +62,7 @@
         uniform float uLightZ;
         uniform samplerCube uSkyBox;
         uniform mat4 uViewDirectionProjectionInverse;
-        uniform int uFinalGatheringVersion; // 0 for ambient, 1 for subsurface, 2 for color bleeding, 3 for caustics
+        uniform int uFinalGatheringVersion; // 0 for ambient, 1 for env. ill., 2 for color bleeding, 3 for caustics
         
         in vec4 vPosition;
         out vec4 fragmentColor;
@@ -223,9 +223,9 @@
             rdir = normalize(origin + cam * uFocus * vec3(w * uv.x, h * uv.y, 1.0) - rpos);
         }
         
-                                                        //============================================================================
-                                                        //Plane
-                                                        //============================================================================
+        //============================================================================
+        //Plane
+        //============================================================================
         vec2 planeMap(vec3 point) {
             vec3 normal = vec3(0.0, 1.0, 0.0);
             vec3 u = normalize(vec3(normal.y, -normal.x, 0));
@@ -243,8 +243,9 @@
                 info.pos = pos + tt * dir;
         
                 vec2 uv = planeMap(info.pos);
-                vec3 tempN = texture(uFloorNormal, uv).xyz;
-                info.normal = tempN;
+                // vec3 tempN = texture(uFloorNormal, uv).xyz;
+                info.normal = vec3(0.0, 1.0, 0.0);
+                // info.normal = tempN;
                 info.reflectType = reflectType;
                 info.u = uv.x;
                 info.v = uv.y;
@@ -275,8 +276,9 @@
             tmax = t0;
             info.pos = pos + t0 * dir;
             vec2 uv = planeMap(info.pos);
-            vec3 tempN = texture(uFloorNormal, uv).xyz;
-            info.normal = tempN;
+            // vec3 tempN = texture(uFloorNormal, uv).xyz;
+            // info.normal = tempN;
+            info.normal = vec3(0.0, 1.0, 0.0);
             info.reflectType = reflectType;
             info.u = uv.x;
             info.v = uv.y;
@@ -300,8 +302,8 @@
                 return false;
             tmax = t;
             vec2 uv = planeMap(hitInfo.pos);
-            vec3 tempN = texture(uFloorNormal, uv).xyz;
-            hitInfo.normal = tempN;
+            // vec3 tempN = texture(uFloorNormal, uv).xyz;
+            // hitInfo.normal = tempN;
             hitInfo.pos = p;
             hitInfo.u = uv.x;
             hitInfo.v = uv.y;
@@ -555,7 +557,7 @@
             float tmax = 10000.0;
             bool hit = false;
             hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, 1, tmin, tmax, info) || hit;
-            hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS, 1, tmin, tmax, info) || hit;
+            hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS, 2, tmin, tmax, info) || hit;
             hit = IntersectPlane(0.0, 1.0, 0.0, 0.0, 0, pos, dir, tmin, tmax, info) || hit;
         
             vec3 v0 = vec3(-5.0, 5.0, 5.0);
@@ -763,7 +765,7 @@
                     float dist = length(light.position - info.pos);
         
                     if(info.reflectType == 5) { // 
-                        Material sphere = sphere(uLambertianColor);
+                        Material sphere = sphere(uSphere1Color);
         
                         intense = intensityAt(light, info, shadow, pos, sphere, c);
                         c = c * intense;
@@ -774,18 +776,24 @@
                         vec2 uv;
                         uv.x = info.u;
                         uv.y = info.v;
-                        vec3 tempC = texture(uFloorTexture, uv).xyz;
-                        Material plane = plane(tempC);
+                        // vec3 tempC = texture(uFloorTexture, uv).xyz;
+                        Material plane = plane(uGroundColor);
         
                         intense = intensityAt(light, info, shadow, pos, plane, c);
                         c = c * intense;
 
-                    } else if(info.reflectType == 1) { // lambertian
+                    } else if(info.reflectType == 1 || info.reflectType == 2) { // lambertian
                         // ONLY ONE USED FOR PROJECT 9
-                        
-                        Material sphere = sphere(uLambertianColor);
-                        intense = intensityAt(light, info, shadow, pos, sphere, c);
-                        c = c * intense;
+                        if (info.reflectType == 1) { // if sphere 1, apply its color
+                            Material sphere = sphere(uSphere1Color);
+                            intense = intensityAt(light, info, shadow, pos, sphere, c);
+                            c = c * intense;
+                        }
+                        else { // if sphere 2, apply its color
+                            Material sphere = sphere(uSphere2Color);
+                            intense = intensityAt(light, info, shadow, pos, sphere, c);
+                            c = c * intense;                        }
+                        }
 
                         if (uFinalGatheringVersion == 4) { // default
                             continue;
@@ -798,11 +806,14 @@
                         float w = 1.0;
                         for (int i = 0; i < 12; ++i) {
                             // Nh denote unit shading normal (N?)
-                            vec3 nplusgeo = N + geodesic[i];
-                            vec3 nhprime = (nplusgeo)/length(nplusgeo);
+                            vec3 nplusr = N + geodesic[i];
+                            vec3 nhprime = (nplusr)/length(nplusr);
 
                             // compute weight of ray
                             float costheta = dot(N, nhprime);
+
+                            // if ray goes into the sphere, skip
+                            if (costheta < 0.0) continue;
                         
                             // shoot ray and look for hit from info.pos in direction of nhprime
                             bool gathering_intersect = intersect(info.pos, nhprime, info2);
@@ -817,14 +828,46 @@
                                     ci = vec3(1.0);
                                 }
                             }
-                            // else if (uFinalGatheringVersion == 0) { // if ambient shading
-                            //     if (gathering_intersect) { // if hits object, black
-
-                            //     }
-                            //     else { // if hits infinite sphere, white
-
-                            //     }
-                            // }
+                            else if (uFinalGatheringVersion == 1) { // if environment illumination/subsurface
+                                if (gathering_intersect) { // if hits object, black
+                                    ci = vec3(0.0);
+                                }
+                                else { // if hits infinite sphere, color of sphere
+                                    ci = uSkyColor;
+                                }
+                            }
+                            else if (uFinalGatheringVersion == 2) { // if color bleeding
+                                if (gathering_intersect) { // if hits object, diffuse color of object
+                                    if (info2.reflectType == 1) { // if another sphere
+                                        ci = uSphere1Color;
+                                    }
+                                    else if (info2.reflectType == 2) { // if sphere 2
+                                        ci = uSphere2Color;
+                                    }
+                                    else if (info2.reflectType == 0) { // if ground
+                                        vec2 uv;
+                                        uv.x = info2.u;
+                                        uv.y = info2.v;
+                                        ci = texture(uFloorTexture, uv).xyz;
+                                    }
+                                    else { // should never reach here :)
+                                        continue;
+                                    }
+                                }
+                                else { // if hits infinite sphere, color of sphere
+                                    ci = uSkyColor;
+                                }
+                            }
+                            else if (uFinalGatheringVersion == 3) { // if caustics
+                                if (gathering_intersect) { // if hits object, refractive or specular color of object
+                                    // TODO: this one kinda hard
+                                    // go through the object if refractive and find color of next object
+                                    // otherwise, use specular color
+                                }
+                                else { // if hits infinite sphere, color of sphere
+                                    ci = uSkyColor;
+                                }
+                            }
 
                             
                             // update color of the pixel
@@ -833,26 +876,15 @@
                         }
 
                         c = wc / w;
-
-                    } else if(info.reflectType == 2) { // specular
-        
-                        Material mirror = mirror();
-        
-                        intense = intensityAt(light, info, shadow, pos, mirror, c);
-                        c = c * intense;        
-                        dir = normalize(reflect(dir, info.normal) + uFuzziness * random_in_unit_sphere());
-                        if(dot(info.normal, dir) < 0.0)
-                            break;
-                    }
                 } else { // surrounding environment ("infinite sphere")
                     // vec3 pp;
                     // bool test = envSphere(pos, dir, SPHERE_POS4, 20.0, 0.00001, 1000.0, pp);
                     // vec2 uv = sphereMap(pp, SPHERE_POS4, 20.0);
                     // if (uFinalGatheringVersion == 0) { // white for ambient
-                        c = vec3(1, 1, 1); 
+                        // c = vec3(1, 1, 1); 
                     // }
                     // else { // baby blue for all other gatherings
-                        // c = uSkyColor;
+                        c = uSkyColor;
                     // }
                     break;
                 }
@@ -908,20 +940,21 @@
         fieldOfView: 90.0,
         focus: 10.0,
         aperture: 0.0,
-        groundColor1: [0, 0, 0],
-        groundColor2: [255, 255, 255],
-        lambertianColor: [220, 100, 100],
-        metalColor: [255, 255, 255],
+        skyColor: [54.0, 81.0, 94.0], // baby blue :)
+        groundColor: [122.0, 122.0, 122.0], // grey
+        sphere1color: [220.0, 100.0, 100.0], // 
+        sphere2color: [100.0, 220.0, 100.0],
+        metalColor: [255.0, 255.0, 255.0],
         fuzziness: 0.0,
         samples: 20,
         lightX:0.0,
         lightY:0.0,
         lightZ:0.0,
         ambientOcclusion: false,
-        subsurfaceScattering: false,
+        environmentIllumination: false,
         colorBleeding: false,
         caustics: false
-      }
+      };
 
       const gui = new dat.GUI();
       const guiCamera = gui.addFolder('Camera');
@@ -962,32 +995,47 @@
             glsl.setUniform('uFinalGatheringVersion', '1i', 4);
         }
       }, this);
-      addToGui(guiIllumation, props, 'subsurfaceScattering', function(v) {
+      addToGui(guiIllumation, props, 'environmentIllumination', function(v) {
         if (v) {
-            console.log('subsurface scattering');
+            console.log('environment illumination');
             glsl.setUniform('uFinalGatheringVersion', '1i', 1);
         }
         else {
         glsl.setUniform('uFinalGatheringVersion', '1i', 4);
         }
       }, this);
-      addToGui(guiIllumation, props, 'colorBleeding', function(v) {
-        if (v) {
-            console.log('color bleeding');
-            glsl.setUniform('uFinalGatheringVersion', '1i', 2);
-        }
-        else {
-            glsl.setUniform('uFinalGatheringVersion', '1i', 4);
-        }
+    //   addToGui(guiIllumation, props, 'colorBleeding', function(v) {
+    //     if (v) {
+    //         console.log('color bleeding');
+    //         glsl.setUniform('uFinalGatheringVersion', '1i', 2);
+    //     }
+    //     else {
+    //         glsl.setUniform('uFinalGatheringVersion', '1i', 4);
+    //     }
+    //   }, this);
+    //   addToGui(guiIllumation, props, 'caustics', function(v) {
+    //     if (v) {
+    //         console.log('caustics');
+    //         glsl.setUniform('uFinalGatheringVersion', '1i', 3);
+    //     }
+    //     else {
+    //         glsl.setUniform('uFinalGatheringVersion', '1i', 4);
+    //     }
+    //   }, this);
+
+      const guiColors = gui.addFolder('Object Colors');
+      // TODO: FIGURE OUT COLORS :DD
+      addColorToGui(guiColors, props, 'skyColor', function(v) {
+        glsl.setUniform('uSkyColor', '3fv', [v[0]/255.0, v[1]/255.0, v[2]/255.0]);
       }, this);
-      addToGui(guiIllumation, props, 'caustics', function(v) {
-        if (v) {
-            console.log('caustics');
-            glsl.setUniform('uFinalGatheringVersion', '1i', 3);
-        }
-        else {
-            glsl.setUniform('uFinalGatheringVersion', '1i', 4);
-        }
+      addColorToGui(guiColors, props, 'groundColor', function(v) {
+        glsl.setUniform('uGroundColor', '3fv', [v[0]/255.0, v[1]/255.0, v[2]/255.0]);
+      }, this);
+      addColorToGui(guiColors, props, 'sphere1color', function(v) {
+        glsl.setUniform('uSphere1Color', '3fv', [v[0]/255.0, v[1]/255.0, v[2]/255.0]);
+      }, this);
+      addColorToGui(guiColors, props, 'sphere2color', function(v) {
+        glsl.setUniform('uSphere2Color', '3fv', [v[0]/255.0, v[1]/255.0, v[2]/255.0]);
       }, this);
 
       addToGui(gui, props, 'samples', function(v) {
@@ -999,10 +1047,10 @@
       glsl.setUniform('uCameraHeight', '1f', props.cameraHeight);
       glsl.setUniform('uFocus', '1f', props.focus);
       glsl.setUniform('uAperture', '1f', props.aperture);
-      glsl.setUniform('uGroundColor1', '3fv', [props.groundColor1[0] / 255.0, props.groundColor1[1] / 255.0, props.groundColor1[2] / 255.0]);
-      glsl.setUniform('uGroundColor2', '3fv', [props.groundColor2[0] / 255.0, props.groundColor2[1] / 255.0, props.groundColor2[2] / 255.0]);
-      glsl.setUniform('uSkyColor', '3fv', [54.0/255.0, 81.0/255.0, 94.0/255.0]); // baby blue :)
-      glsl.setUniform('uLambertianColor', '3fv', [props.lambertianColor[0] / 255.0, props.lambertianColor[1] / 255.0, props.lambertianColor[2] / 255.0]);
+      glsl.setUniform('uGroundColor', '3fv', [props.groundColor[0] / 255.0, props.groundColor[1] / 255.0, props.groundColor[2] / 255.0]);
+      glsl.setUniform('uSkyColor', '3fv', [props.skyColor[0] / 255.0, props.skyColor[1] / 255.0, props.skyColor[2] / 255.0]);
+      glsl.setUniform('uSphere1Color', '3fv', [props.sphere1color[0] / 255.0, props.sphere1color[1] / 255.0, props.sphere1color[2] / 255.0]);
+      glsl.setUniform('uSphere2Color', '3fv', [props.sphere2color[0] / 255.0, props.sphere2color[1] / 255.0, props.sphere2color[2] / 255.0]);
       glsl.setUniform('uMetalColor', '3fv', [props.metalColor[0] / 255.0, props.metalColor[1] / 255.0, props.metalColor[2] / 255.0]);
       glsl.setUniform('uFuzziness', '1f', props.fuzziness);
       glsl.setUniform('uSamples', '1i', props.samples);

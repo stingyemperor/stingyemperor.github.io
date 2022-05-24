@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Ray Tracing"</title>
+  <title>Image Based Illumination</title>
   <style>
     body {
       margin: 0;
@@ -67,15 +67,15 @@
         in vec4 vPosition;
         out vec4 fragmentColor;
         
-                                                                #define PI 3.14159265359
-                                                                #define TWO_PI 6.28318530718
-        
-                                                                #define NUM_OF_FACES 6
-                                                                #define NUM_OF_VERTICES 8
-        
-                                                        //============================================================================
-                                                        //Structs
-                                                        //============================================================================        
+        #define PI 3.14159265359
+        #define TWO_PI 6.28318530718
+
+        #define NUM_OF_FACES 6
+        #define NUM_OF_VERTICES 8
+
+        //============================================================================
+        //Structs
+        //============================================================================        
         struct HitInfo {
             vec3 pos;
             vec3 normal;
@@ -335,9 +335,9 @@
             return true;
         }
         
-                                                        //============================================================================
-                                                        //Sphere
-                                                        //============================================================================
+        //============================================================================
+        //Sphere
+        //============================================================================
         
         bool sphere(in vec3 pos, in vec3 dir, in vec3 center, in float radius, in int reflectType, in float tmin, inout float tmax, inout HitInfo info) {
             vec3 oc = pos - center;
@@ -427,11 +427,13 @@
         }
         
         const float POS_RADIUS = 3.0;
-        const vec3 SPHERE_POS1 = vec3(POS_RADIUS * cos(0.0), 2.0, POS_RADIUS * sin(0.0));
-        const vec3 SPHERE_POS2 = vec3(POS_RADIUS * -cos(TWO_PI / 3.0), 2.0, POS_RADIUS * sin(TWO_PI / 3.0));
-        const vec3 SPHERE_POS3 = vec3(POS_RADIUS * cos(TWO_PI / 3.0 * 2.0), 2.0, POS_RADIUS * sin(TWO_PI / 3.0 * 2.0));
+        const float POS_RADIUS2 = 4.0;
+        const vec3 SPHERE_POS1 = vec3(POS_RADIUS * cos(0.0), 10.0, POS_RADIUS * sin(0.0));
+        const vec3 SPHERE_POS2 = vec3(POS_RADIUS2 * -cos(TWO_PI / 3.0), 3.0, POS_RADIUS2 * sin(TWO_PI / 3.0));
+        const vec3 SPHERE_POS3 = vec3(POS_RADIUS * cos(TWO_PI / 3.0 * 2.0), 3.0, POS_RADIUS * sin(TWO_PI / 3.0 * 2.0));
         const vec3 SPHERE_POS4 = vec3(0.0, 0.0, 0.0);
-        const float SPHERE_RADIUS = 2.0;
+        const float SPHERE_RADIUS = 3.0;
+        const float SPHERE_RADIUS2 = 3.0;
         
         //============================================================================
         //Triangle
@@ -571,7 +573,7 @@
             float tmax = 10000.0;
             bool hit = false;
             hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, 1, tmin, tmax, info) || hit;
-            hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS, 2, tmin, tmax, info) || hit;
+            hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS2, 2, tmin, tmax, info) || hit;
             hit = IntersectPlane(0.0, 1.0, 0.0, 0.0, 0, pos, dir, tmin, tmax, info) || hit;
         
             vec3 v0 = vec3(-5.0, 5.0, 5.0);
@@ -586,7 +588,7 @@
             float tmax = 10000.0;
             bool hit = false;
             hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, 1, tmin, tmax, info) || hit;
-            hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS, 1, tmin, tmax, info) || hit;
+            hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS2, 2, tmin, tmax, info) || hit;
         
             vec3 v0 = vec3(-5.0, 5.0, 5.0);
             vec3 v1 = vec3(-5.0, -5.0, 5.0);
@@ -599,7 +601,7 @@
             float tmin = 0.00001;
             bool hit = false;
             hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS, tmin, tMax) || hit;
-            hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, tmin, tMax) || hit;
+            hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS2, tmin, tMax) || hit;
             hit = IntersectPlane(0.0, 1.0, 0.0, 0.0, 0, pos, dir, tmin, tMax) || hit;
         
             vec3 v0 = vec3(-5.0, 5.0, 5.0);
@@ -694,7 +696,10 @@
                 }
             }
         
-            color = (material.ambient + (sum / float(light.samples)) * light.intensity)*light.color;
+            // color = (material.ambient + (sum / float(light.samples)) * light.intensity)*light.color;
+            // version without light intensity
+            color = (material.ambient + (sum / float(light.samples)))*light.color;
+
             return total / float(light.samples);
         }
         
@@ -736,6 +741,76 @@
         vec3 trace(in vec3 pos, in vec3 dir, in Light light) {
         
             // for now, hardcode geodesic sphere
+            // float num_geodesic = 66.0;
+            // vec3 geodesic[66];
+            // geodesic[0] = vec3(-0.430169, -0.792515, 0.43229);
+            // geodesic[1] = vec3(0.435218, 0.433667, 0.788998);
+            // geodesic[2] = vec3(-0.78803, 0.433097, 0.437534);
+            // geodesic[3] = vec3(0.436176, -0.42123, 0.795183);
+            // geodesic[4] = vec3(-0.432018, -0.78769, -0.439209);
+            // geodesic[5] = vec3(0.00830602, 0.999936, -0.00764532);
+            // geodesic[6] = vec3(0.999681, -0.024016, -0.00782368);
+            // geodesic[7] = vec3(-0.0483102, -0.030691, -0.998361);
+            // geodesic[8] = vec3(-0.998271, -0.0318236, 0.0494162);
+            // geodesic[9] = vec3(0.00771543, -0.039023, 0.999209);
+            // geodesic[10] = vec3(0.000736635, -1, -0.000162692);
+            // geodesic[11] = vec3(0.00705369, -0.700696, 0.713425);
+            // geodesic[12] = vec3(-0.702487, 0.00902333, 0.711639);
+            // geodesic[13] = vec3(0.717257, 0.0104498, 0.696731);
+            // geodesic[14] = vec3(0.698747, 0.715279, -0.0113935);
+            // geodesic[15] = vec3(-0.0102122, 0.713327, -0.700757);
+            // geodesic[16] = vec3(-0.692692, 0.721223, 0.00383561);
+            // geodesic[17] = vec3(0.71969, -0.694218, -0.0103505);
+            // geodesic[18] = vec3(-0.00498393, -0.693576, -0.720366);
+            // geodesic[19] = vec3(-0.713566, -0.700585, -0.00183561);
+            // geodesic[20] = vec3(0.00517374, 0.722551, 0.691298);
+            // geodesic[21] = vec3(0.700056, 0.00526936, -0.714068);
+            // geodesic[22] = vec3(-0.710371, 0.00720582, -0.70379);
+            // geodesic[23] = vec3(0.00294034, -0.954234, 0.299047);
+            // geodesic[24] = vec3(0.00793723, -0.311896, 0.950083);
+            // geodesic[25] = vec3(-0.287223, -0.0191003, 0.957673);
+            // geodesic[26] = vec3(-0.945698, -0.0136581, 0.324759);
+            // geodesic[27] = vec3(-0.951183, -0.307002, 0.0316403);
+            // geodesic[28] = vec3(-0.297761, -0.954632, -0.00409671);
+            // geodesic[29] = vec3(0.302119, -0.0191557, 0.953078);
+            // geodesic[30] = vec3(0.959572, -0.0081825, 0.281345);
+            // geodesic[31] = vec3(0.959399, 0.281908, -0.00902644);
+            // geodesic[32] = vec3(0.289767, 0.957057, -0.00880356);
+            // geodesic[33] = vec3(0.00736271, 0.961684, 0.274061);
+            // geodesic[34] = vec3(0.0069995, 0.275826, 0.961182);
+            // geodesic[35] = vec3(0.95471, -0.0103986, -0.297356);
+            // geodesic[36] = vec3(0.258579, -0.0153934, -0.965868);
+            // geodesic[37] = vec3(-0.035943, 0.276891, -0.960229);
+            // geodesic[38] = vec3(0.00567149, 0.957149, -0.289539);
+            // geodesic[39] = vec3(-0.319872, -0.0139508, -0.947358);
+            // geodesic[40] = vec3(-0.964817, -0.0151712, -0.262484);
+            // geodesic[41] = vec3(-0.959399, 0.279903, 0.0347532);
+            // geodesic[42] = vec3(-0.274092, 0.961676, -0.00728487);
+            // geodesic[43] = vec3(0.302078, -0.953277, -0.00351599);
+            // geodesic[44] = vec3(0.954783, -0.297168, -0.00903092);
+            // geodesic[45] = vec3(0.0022908, -0.953326, -0.301934);
+            // geodesic[46] = vec3(-0.0330523, -0.301223, -0.952981);
+            // geodesic[47] = vec3(0.423962, 0.809344, 0.40647);
+            // geodesic[48] = vec3(0.417682, 0.804155, -0.422938);
+            // geodesic[49] = vec3(-0.412413, 0.807306, -0.422105);
+            // geodesic[50] = vec3(-0.411201, 0.812612, 0.413007);
+            // geodesic[51] = vec3(0.80027, 0.434566, 0.413183);
+            // geodesic[52] = vec3(0.792962, 0.43101, -0.430629);
+            // geodesic[53] = vec3(0.808664, -0.414763, 0.417174);
+            // geodesic[54] = vec3(0.800117, -0.414532, -0.433563);
+            // geodesic[55] = vec3(0.411277, 0.431923, -0.802679);
+            // geodesic[56] = vec3(-0.43401, 0.428809, -0.792312);
+            // geodesic[57] = vec3(0.415414, -0.418216, -0.807791);
+            // geodesic[58] = vec3(-0.434974, -0.414542, -0.799345);
+            // geodesic[59] = vec3(-0.795826, -0.418923, 0.437224);
+            // geodesic[60] = vec3(-0.796587, 0.436563, -0.418165);
+            // geodesic[61] = vec3(-0.802351, -0.422856, -0.42122);
+            // geodesic[62] = vec3(-0.421963, -0.423222, 0.801767);
+            // geodesic[63] = vec3(-0.422368, 0.43499, 0.795229);
+            // geodesic[64] = vec3(0.43949, -0.788954, 0.429417);
+            // geodesic[65] = vec3(0.436415, -0.784972, -0.439728);
+
+            float num_geodesic = 12.0;
             vec3 geodesic[12];
             geodesic[0] = vec3(0.525731, 0, 0.850651);
             geodesic[1] = vec3(0, 0.850651, 0.525731);
@@ -750,9 +825,8 @@
             geodesic[10] = vec3(-0.850651, 0.525731, 0);
             geodesic[11] = vec3(-0.850651, -0.525731, 0);
 
-
             HitInfo info;
-            vec3 c = vec3(0.5);
+            vec3 c = vec3(1.0);
         
             for(int i = 0; i < 1; i++) { // why 3 times? changed to 1 time
                 if(intersect(pos, dir, info, light)) {
@@ -760,7 +834,6 @@
                     vec3 L = normalize(light.position - info.pos);
                     vec3 N = normalize(info.normal);
                     vec3 V = normalize(pos - info.pos);
-                    float intense;
                     vec3 shadowRayOrigin = info.pos;
         
                     vec3 shadowRayDirection = L;
@@ -770,38 +843,58 @@
                         vec2 uv;
                         uv.x = info.u;
                         uv.y = info.v;
-                        Material plane = plane(uGroundColor);
-                        intense = intensityAt(light, info, shadow, pos, plane, c);
-                        c = c * intense;
-                    } else if(info.reflectType == 1 || info.reflectType == 2) { // lambertian
-                        // ONLY ONE USED FOR PROJECT 9
-                        if (info.reflectType == 1) { // if sphere 1, apply its color
-                            Material sphere = sphere(uSphere1Color);
-                            intense = intensityAt(light, info, shadow, pos, sphere, c);
+                        if (uFinalGatheringVersion == 4) { // default
+                            Material plane = plane(uGroundColor);
+                            float intense = intensityAt(light, info, shadow, pos, plane, c);
                             c = c * intense;
+                            continue;
                         }
-                        else { // if sphere 2, apply its color
+                        else {
+                            c = uGroundColor;
+                        }
+                    } 
+                    // ONLY ONE USED FOR PROJECT 9
+                    else if (info.reflectType == 1) { // if sphere 1, apply its color
+                        if (uFinalGatheringVersion == 4) { // default
+                            Material sphere = sphere(uSphere1Color);
+                            float intense = intensityAt(light, info, shadow, pos, sphere, c);
+                            c = c * intense;
+                            continue;
+                        }
+                        else {
+                            c = uSphere1Color;
+                        }
+                    }
+                    else if (info.reflectType == 2) { // if sphere 2, apply its color
+                        if (uFinalGatheringVersion == 4) { // default
                             Material sphere = sphere(uSphere2Color);
-                            intense = intensityAt(light, info, shadow, pos, sphere, c);
-                            c = c * intense;                        
+                            float intense = intensityAt(light, info, shadow, pos, sphere, c);
+                            c = c * intense;
+                            continue;
                         }
+                        else {
+                            c = uSphere2Color;
+                        }
+                    }
+                    else { // should never happen...
+                        c = vec3(0.0);
                     }
 
-                    if (uFinalGatheringVersion == 4) { // default
-                        continue;
-                    }
+                    // if (uFinalGatheringVersion == 4) { // default
+                    //     continue;
+                    // }
 
                     // based on slides from final gathering
                     // iterate through different directions
                     HitInfo info2;
-                    vec3 wc = c;
-                    float w = 1.0;
+                    vec3 wc = c * num_geodesic;
+                    float w = num_geodesic;
                     // calculate rot matrix of random angle about the normal
                     // pseudo-random based on seed of location! (random returns between 0 and 1)
                     float theta = random(info.pos.xy) * 2.0 * PI;
                     mat3 rotmatrix = calculateRotationMatrix(theta, N);
                     vec3 rotated_geo; // for use later
-                    for (int i = 0; i < 12; ++i) {
+                    for (int i = 0; i < int(num_geodesic); ++i) {
                         // calculate rotation of geodesic (could go in function but probs too much memory usage tbh)
                         rotated_geo = geodesic[i] * rotmatrix;
 
@@ -822,10 +915,10 @@
                         vec3 ci;
                         if (uFinalGatheringVersion == 0) { // if ambient shading
                             if (gathering_intersect) { // if hits object, black
-                                ci = vec3(0.0);
+                                ci = vec3(0.0, 0.0, 0.0);
                             }
                             else { // if hits infinite sphere, white
-                                ci = vec3(1.0);
+                                ci = vec3(1.0, 1.0, 1.0);
                             }
                         }
                         else if (uFinalGatheringVersion == 1) { // if environment illumination/subsurface
@@ -845,10 +938,7 @@
                                     ci = uSphere2Color;
                                 }
                                 else if (info2.reflectType == 0) { // if ground
-                                    vec2 uv;
-                                    uv.x = info2.u;
-                                    uv.y = info2.v;
-                                    ci = texture(uFloorTexture, uv).xyz;
+                                    ci = uGroundColor;
                                 }
                                 else { // should never reach here :)
                                     continue;
@@ -858,16 +948,39 @@
                                 ci = uSkyColor;
                             }
                         }
-                        else if (uFinalGatheringVersion == 3) { // if caustics
-                            if (gathering_intersect) { // if hits object, refractive or specular color of object
-                                // TODO: this one kinda hard
-                                // go through the object if refractive and find color of next object
-                                // otherwise, use specular color
-                            }
-                            else { // if hits infinite sphere, color of sphere
-                                ci = uSkyColor;
-                            }
-                        }
+                        // else if (uFinalGatheringVersion == 3) { // if caustics
+                        //     if (gathering_intersect) { // if hits object, refractive or specular color of object
+                        //         // TODO: this one kinda hard
+                        //         // go through the object if refractive and find color of next object
+                        //         // otherwise, use specular color
+                        //         // we will have refractive and specular modes ig
+                        //         // this one is refractive
+                        //         vec3 n;
+                        //         float eta, cosine;
+                        //         float prob = 0.0;
+                        //         float indexOfRefraction = 1.3435; // user can change (this one is water)
+                        //         if (dot(dir, info.normal) < 0.0) {
+                        //             n = info.normal;
+                        //             eta = 1.0/indexOfRefraction;
+                        //             cosine = -dot(dir, info.normal) / length(dir);
+                        //         } else {
+                        //             n = -info.normal;
+                        //             eta = indexOfRefraction;
+                        //             cosine = indexOfRefraction * dot(dir, info.normal) / length(dir);
+                        //         }
+                        //         vec3 r = refract(normalize(dir), normalize(n), eta);
+                        //         bool isRefracted = r.x!=0.0|| r.y!=0.0 ||r.z!=0.0;
+                        //         if(isRefracted){
+                        //             prob = schlick(cosine, uIndexOfRefraction);
+                        //         }
+                        //         if (random() < prob) {
+                        //             dir = normalize(reflect(dir, n));
+                        //         }
+                        //     }
+                        //     else { // if hits infinite sphere, color of sphere
+                        //         ci = uSkyColor;
+                        //     }
+                        // }
 
                         
                         // update color of the pixel
@@ -875,6 +988,10 @@
                         w = w + costheta;
                     }
                     c = wc / w;
+                    Material sph = sphere(c);
+                    float intense = intensityAt(light, info, shadow, pos, sph, c);
+                    // c = c * intense;
+                    
 
                 } else { // surrounding environment ("infinite sphere")
                     // vec3 pp;
@@ -936,14 +1053,14 @@
 
       const props = {
         cameraPosition: 0.0,
-        cameraHeight: 4.0,
+        cameraHeight: 5.2, // just above the horizon
         fieldOfView: 90.0,
         focus: 10.0,
         aperture: 0.0,
-        skyColor: [54.0, 81.0, 94.0], // baby blue :)
-        groundColor: [122.0, 122.0, 122.0], // grey
-        sphere1color: [220.0, 100.0, 100.0], // 
-        sphere2color: [100.0, 220.0, 100.0],
+        skyColor: [129.0, 136.0, 255.0], // 0.5 alpha dark blue
+        groundColor: [255.0, 1.0, 195.0], // purple-pink neonish
+        sphere1color: [225.0, 255.0, 0.0], // yellow
+        sphere2color: [0.0, 240.0, 255.0], // baby blue
         metalColor: [255.0, 255.0, 255.0],
         fuzziness: 0.0,
         samples: 20,
@@ -1004,24 +1121,24 @@
         glsl.setUniform('uFinalGatheringVersion', '1i', 4);
         }
       }, this);
-    //   addToGui(guiIllumation, props, 'colorBleeding', function(v) {
-    //     if (v) {
-    //         console.log('color bleeding');
-    //         glsl.setUniform('uFinalGatheringVersion', '1i', 2);
-    //     }
-    //     else {
-    //         glsl.setUniform('uFinalGatheringVersion', '1i', 4);
-    //     }
-    //   }, this);
-    //   addToGui(guiIllumation, props, 'caustics', function(v) {
-    //     if (v) {
-    //         console.log('caustics');
-    //         glsl.setUniform('uFinalGatheringVersion', '1i', 3);
-    //     }
-    //     else {
-    //         glsl.setUniform('uFinalGatheringVersion', '1i', 4);
-    //     }
-    //   }, this);
+      addToGui(guiIllumation, props, 'colorBleeding', function(v) {
+        if (v) {
+            console.log('color bleeding');
+            glsl.setUniform('uFinalGatheringVersion', '1i', 2);
+        }
+        else {
+            glsl.setUniform('uFinalGatheringVersion', '1i', 4);
+        }
+      }, this);
+      addToGui(guiIllumation, props, 'caustics', function(v) {
+        if (v) {
+            console.log('caustics');
+            glsl.setUniform('uFinalGatheringVersion', '1i', 3);
+        }
+        else {
+            glsl.setUniform('uFinalGatheringVersion', '1i', 4);
+        }
+      }, this);
 
       const guiColors = gui.addFolder('Object Colors');
       // TODO: FIGURE OUT COLORS :DD

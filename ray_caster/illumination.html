@@ -589,6 +589,8 @@
             bool hit = false;
             hit = sphere(pos, dir, SPHERE_POS3, SPHERE_RADIUS, 1, tmin, tmax, info) || hit;
             hit = sphere(pos, dir, SPHERE_POS2, SPHERE_RADIUS2, 2, tmin, tmax, info) || hit;
+            hit = IntersectPlane(0.0, 1.0, 0.0, 0.0, 0, pos, dir, tmin, tmax, info) || hit;
+
         
             vec3 v0 = vec3(-5.0, 5.0, 5.0);
             vec3 v1 = vec3(-5.0, -5.0, 5.0);
@@ -736,94 +738,94 @@
         }
         
         //============================================================================
-        //Ray Tracer
+        // Ray Tracer
         //============================================================================
         vec3 trace(in vec3 pos, in vec3 dir, in Light light) {
         
             // for now, hardcode geodesic sphere
-            // float num_geodesic = 66.0;
-            // vec3 geodesic[66];
-            // geodesic[0] = vec3(-0.430169, -0.792515, 0.43229);
-            // geodesic[1] = vec3(0.435218, 0.433667, 0.788998);
-            // geodesic[2] = vec3(-0.78803, 0.433097, 0.437534);
-            // geodesic[3] = vec3(0.436176, -0.42123, 0.795183);
-            // geodesic[4] = vec3(-0.432018, -0.78769, -0.439209);
-            // geodesic[5] = vec3(0.00830602, 0.999936, -0.00764532);
-            // geodesic[6] = vec3(0.999681, -0.024016, -0.00782368);
-            // geodesic[7] = vec3(-0.0483102, -0.030691, -0.998361);
-            // geodesic[8] = vec3(-0.998271, -0.0318236, 0.0494162);
-            // geodesic[9] = vec3(0.00771543, -0.039023, 0.999209);
-            // geodesic[10] = vec3(0.000736635, -1, -0.000162692);
-            // geodesic[11] = vec3(0.00705369, -0.700696, 0.713425);
-            // geodesic[12] = vec3(-0.702487, 0.00902333, 0.711639);
-            // geodesic[13] = vec3(0.717257, 0.0104498, 0.696731);
-            // geodesic[14] = vec3(0.698747, 0.715279, -0.0113935);
-            // geodesic[15] = vec3(-0.0102122, 0.713327, -0.700757);
-            // geodesic[16] = vec3(-0.692692, 0.721223, 0.00383561);
-            // geodesic[17] = vec3(0.71969, -0.694218, -0.0103505);
-            // geodesic[18] = vec3(-0.00498393, -0.693576, -0.720366);
-            // geodesic[19] = vec3(-0.713566, -0.700585, -0.00183561);
-            // geodesic[20] = vec3(0.00517374, 0.722551, 0.691298);
-            // geodesic[21] = vec3(0.700056, 0.00526936, -0.714068);
-            // geodesic[22] = vec3(-0.710371, 0.00720582, -0.70379);
-            // geodesic[23] = vec3(0.00294034, -0.954234, 0.299047);
-            // geodesic[24] = vec3(0.00793723, -0.311896, 0.950083);
-            // geodesic[25] = vec3(-0.287223, -0.0191003, 0.957673);
-            // geodesic[26] = vec3(-0.945698, -0.0136581, 0.324759);
-            // geodesic[27] = vec3(-0.951183, -0.307002, 0.0316403);
-            // geodesic[28] = vec3(-0.297761, -0.954632, -0.00409671);
-            // geodesic[29] = vec3(0.302119, -0.0191557, 0.953078);
-            // geodesic[30] = vec3(0.959572, -0.0081825, 0.281345);
-            // geodesic[31] = vec3(0.959399, 0.281908, -0.00902644);
-            // geodesic[32] = vec3(0.289767, 0.957057, -0.00880356);
-            // geodesic[33] = vec3(0.00736271, 0.961684, 0.274061);
-            // geodesic[34] = vec3(0.0069995, 0.275826, 0.961182);
-            // geodesic[35] = vec3(0.95471, -0.0103986, -0.297356);
-            // geodesic[36] = vec3(0.258579, -0.0153934, -0.965868);
-            // geodesic[37] = vec3(-0.035943, 0.276891, -0.960229);
-            // geodesic[38] = vec3(0.00567149, 0.957149, -0.289539);
-            // geodesic[39] = vec3(-0.319872, -0.0139508, -0.947358);
-            // geodesic[40] = vec3(-0.964817, -0.0151712, -0.262484);
-            // geodesic[41] = vec3(-0.959399, 0.279903, 0.0347532);
-            // geodesic[42] = vec3(-0.274092, 0.961676, -0.00728487);
-            // geodesic[43] = vec3(0.302078, -0.953277, -0.00351599);
-            // geodesic[44] = vec3(0.954783, -0.297168, -0.00903092);
-            // geodesic[45] = vec3(0.0022908, -0.953326, -0.301934);
-            // geodesic[46] = vec3(-0.0330523, -0.301223, -0.952981);
-            // geodesic[47] = vec3(0.423962, 0.809344, 0.40647);
-            // geodesic[48] = vec3(0.417682, 0.804155, -0.422938);
-            // geodesic[49] = vec3(-0.412413, 0.807306, -0.422105);
-            // geodesic[50] = vec3(-0.411201, 0.812612, 0.413007);
-            // geodesic[51] = vec3(0.80027, 0.434566, 0.413183);
-            // geodesic[52] = vec3(0.792962, 0.43101, -0.430629);
-            // geodesic[53] = vec3(0.808664, -0.414763, 0.417174);
-            // geodesic[54] = vec3(0.800117, -0.414532, -0.433563);
-            // geodesic[55] = vec3(0.411277, 0.431923, -0.802679);
-            // geodesic[56] = vec3(-0.43401, 0.428809, -0.792312);
-            // geodesic[57] = vec3(0.415414, -0.418216, -0.807791);
-            // geodesic[58] = vec3(-0.434974, -0.414542, -0.799345);
-            // geodesic[59] = vec3(-0.795826, -0.418923, 0.437224);
-            // geodesic[60] = vec3(-0.796587, 0.436563, -0.418165);
-            // geodesic[61] = vec3(-0.802351, -0.422856, -0.42122);
-            // geodesic[62] = vec3(-0.421963, -0.423222, 0.801767);
-            // geodesic[63] = vec3(-0.422368, 0.43499, 0.795229);
-            // geodesic[64] = vec3(0.43949, -0.788954, 0.429417);
-            // geodesic[65] = vec3(0.436415, -0.784972, -0.439728);
+            float num_geodesic = 66.0;
+            vec3 geodesic[66];
+            geodesic[0] = vec3(-0.430169, -0.792515, 0.43229);
+            geodesic[1] = vec3(0.435218, 0.433667, 0.788998);
+            geodesic[2] = vec3(-0.78803, 0.433097, 0.437534);
+            geodesic[3] = vec3(0.436176, -0.42123, 0.795183);
+            geodesic[4] = vec3(-0.432018, -0.78769, -0.439209);
+            geodesic[5] = vec3(0.00830602, 0.999936, -0.00764532);
+            geodesic[6] = vec3(0.999681, -0.024016, -0.00782368);
+            geodesic[7] = vec3(-0.0483102, -0.030691, -0.998361);
+            geodesic[8] = vec3(-0.998271, -0.0318236, 0.0494162);
+            geodesic[9] = vec3(0.00771543, -0.039023, 0.999209);
+            geodesic[10] = vec3(0.000736635, -1, -0.000162692);
+            geodesic[11] = vec3(0.00705369, -0.700696, 0.713425);
+            geodesic[12] = vec3(-0.702487, 0.00902333, 0.711639);
+            geodesic[13] = vec3(0.717257, 0.0104498, 0.696731);
+            geodesic[14] = vec3(0.698747, 0.715279, -0.0113935);
+            geodesic[15] = vec3(-0.0102122, 0.713327, -0.700757);
+            geodesic[16] = vec3(-0.692692, 0.721223, 0.00383561);
+            geodesic[17] = vec3(0.71969, -0.694218, -0.0103505);
+            geodesic[18] = vec3(-0.00498393, -0.693576, -0.720366);
+            geodesic[19] = vec3(-0.713566, -0.700585, -0.00183561);
+            geodesic[20] = vec3(0.00517374, 0.722551, 0.691298);
+            geodesic[21] = vec3(0.700056, 0.00526936, -0.714068);
+            geodesic[22] = vec3(-0.710371, 0.00720582, -0.70379);
+            geodesic[23] = vec3(0.00294034, -0.954234, 0.299047);
+            geodesic[24] = vec3(0.00793723, -0.311896, 0.950083);
+            geodesic[25] = vec3(-0.287223, -0.0191003, 0.957673);
+            geodesic[26] = vec3(-0.945698, -0.0136581, 0.324759);
+            geodesic[27] = vec3(-0.951183, -0.307002, 0.0316403);
+            geodesic[28] = vec3(-0.297761, -0.954632, -0.00409671);
+            geodesic[29] = vec3(0.302119, -0.0191557, 0.953078);
+            geodesic[30] = vec3(0.959572, -0.0081825, 0.281345);
+            geodesic[31] = vec3(0.959399, 0.281908, -0.00902644);
+            geodesic[32] = vec3(0.289767, 0.957057, -0.00880356);
+            geodesic[33] = vec3(0.00736271, 0.961684, 0.274061);
+            geodesic[34] = vec3(0.0069995, 0.275826, 0.961182);
+            geodesic[35] = vec3(0.95471, -0.0103986, -0.297356);
+            geodesic[36] = vec3(0.258579, -0.0153934, -0.965868);
+            geodesic[37] = vec3(-0.035943, 0.276891, -0.960229);
+            geodesic[38] = vec3(0.00567149, 0.957149, -0.289539);
+            geodesic[39] = vec3(-0.319872, -0.0139508, -0.947358);
+            geodesic[40] = vec3(-0.964817, -0.0151712, -0.262484);
+            geodesic[41] = vec3(-0.959399, 0.279903, 0.0347532);
+            geodesic[42] = vec3(-0.274092, 0.961676, -0.00728487);
+            geodesic[43] = vec3(0.302078, -0.953277, -0.00351599);
+            geodesic[44] = vec3(0.954783, -0.297168, -0.00903092);
+            geodesic[45] = vec3(0.0022908, -0.953326, -0.301934);
+            geodesic[46] = vec3(-0.0330523, -0.301223, -0.952981);
+            geodesic[47] = vec3(0.423962, 0.809344, 0.40647);
+            geodesic[48] = vec3(0.417682, 0.804155, -0.422938);
+            geodesic[49] = vec3(-0.412413, 0.807306, -0.422105);
+            geodesic[50] = vec3(-0.411201, 0.812612, 0.413007);
+            geodesic[51] = vec3(0.80027, 0.434566, 0.413183);
+            geodesic[52] = vec3(0.792962, 0.43101, -0.430629);
+            geodesic[53] = vec3(0.808664, -0.414763, 0.417174);
+            geodesic[54] = vec3(0.800117, -0.414532, -0.433563);
+            geodesic[55] = vec3(0.411277, 0.431923, -0.802679);
+            geodesic[56] = vec3(-0.43401, 0.428809, -0.792312);
+            geodesic[57] = vec3(0.415414, -0.418216, -0.807791);
+            geodesic[58] = vec3(-0.434974, -0.414542, -0.799345);
+            geodesic[59] = vec3(-0.795826, -0.418923, 0.437224);
+            geodesic[60] = vec3(-0.796587, 0.436563, -0.418165);
+            geodesic[61] = vec3(-0.802351, -0.422856, -0.42122);
+            geodesic[62] = vec3(-0.421963, -0.423222, 0.801767);
+            geodesic[63] = vec3(-0.422368, 0.43499, 0.795229);
+            geodesic[64] = vec3(0.43949, -0.788954, 0.429417);
+            geodesic[65] = vec3(0.436415, -0.784972, -0.439728);
 
-            float num_geodesic = 12.0;
-            vec3 geodesic[12];
-            geodesic[0] = vec3(0.525731, 0, 0.850651);
-            geodesic[1] = vec3(0, 0.850651, 0.525731);
-            geodesic[2] = vec3(-0.525731, 0, 0.850651);
-            geodesic[3] = vec3(0, -0.850651, 0.525731);
-            geodesic[4] = vec3(0.525731, 0, -0.850651);
-            geodesic[5] = vec3(0, -0.850651, -0.525731);
-            geodesic[6] = vec3(-0.525731, 0, -0.850651);
-            geodesic[7] = vec3(0, 0.850651, -0.525731);
-            geodesic[8] = vec3(0.850651, -0.525731, 0);
-            geodesic[9] = vec3(0.850651, 0.525731, 0);
-            geodesic[10] = vec3(-0.850651, 0.525731, 0);
-            geodesic[11] = vec3(-0.850651, -0.525731, 0);
+            // float num_geodesic = 12.0;
+            // vec3 geodesic[12];
+            // geodesic[0] = vec3(0.525731, 0, 0.850651);
+            // geodesic[1] = vec3(0, 0.850651, 0.525731);
+            // geodesic[2] = vec3(-0.525731, 0, 0.850651);
+            // geodesic[3] = vec3(0, -0.850651, 0.525731);
+            // geodesic[4] = vec3(0.525731, 0, -0.850651);
+            // geodesic[5] = vec3(0, -0.850651, -0.525731);
+            // geodesic[6] = vec3(-0.525731, 0, -0.850651);
+            // geodesic[7] = vec3(0, 0.850651, -0.525731);
+            // geodesic[8] = vec3(0.850651, -0.525731, 0);
+            // geodesic[9] = vec3(0.850651, 0.525731, 0);
+            // geodesic[10] = vec3(-0.850651, 0.525731, 0);
+            // geodesic[11] = vec3(-0.850651, -0.525731, 0);
 
             HitInfo info;
             vec3 c = vec3(1.0);
@@ -971,11 +973,9 @@
                         //         vec3 r = refract(normalize(dir), normalize(n), eta);
                         //         bool isRefracted = r.x!=0.0|| r.y!=0.0 ||r.z!=0.0;
                         //         if(isRefracted){
-                        //             prob = schlick(cosine, uIndexOfRefraction);
+                        //             prob = schlick(cosine, indexOfRefraction);
                         //         }
-                        //         if (random() < prob) {
-                        //             dir = normalize(reflect(dir, n));
-                        //         }
+
                         //     }
                         //     else { // if hits infinite sphere, color of sphere
                         //         ci = uSkyColor;
@@ -988,21 +988,22 @@
                         w = w + costheta;
                     }
                     c = wc / w;
-                    Material sph = sphere(c);
-                    float intense = intensityAt(light, info, shadow, pos, sph, c);
-                    // c = c * intense;
+                    
+                    // depending on surface, material will be applied differently
+                    if (info.reflectType == 0) { // plane
+                        Material sph = plane(c);
+                        float intense = intensityAt(light, info, shadow, pos, sph, c);
+                        c = c * intense;
+                    }
+                    else { // sphere
+                        Material sph = sphere(c);
+                        float intense = intensityAt(light, info, shadow, pos, sph, c);
+                        c = c * intense;
+                    }
                     
 
                 } else { // surrounding environment ("infinite sphere")
-                    // vec3 pp;
-                    // bool test = envSphere(pos, dir, SPHERE_POS4, 20.0, 0.00001, 1000.0, pp);
-                    // vec2 uv = sphereMap(pp, SPHERE_POS4, 20.0);
-                    // if (uFinalGatheringVersion == 0) { // white for ambient
-                        // c = vec3(1, 1, 1); 
-                    // }
-                    // else { // baby blue for all other gatherings
-                        c = uSkyColor;
-                    // }
+                    c = uSkyColor;
                     break;
                 }
             }
@@ -1130,15 +1131,15 @@
             glsl.setUniform('uFinalGatheringVersion', '1i', 4);
         }
       }, this);
-      addToGui(guiIllumation, props, 'caustics', function(v) {
-        if (v) {
-            console.log('caustics');
-            glsl.setUniform('uFinalGatheringVersion', '1i', 3);
-        }
-        else {
-            glsl.setUniform('uFinalGatheringVersion', '1i', 4);
-        }
-      }, this);
+    //   addToGui(guiIllumation, props, 'caustics', function(v) {
+    //     if (v) {
+    //         console.log('caustics');
+    //         glsl.setUniform('uFinalGatheringVersion', '1i', 3);
+    //     }
+    //     else {
+    //         glsl.setUniform('uFinalGatheringVersion', '1i', 4);
+    //     }
+    //   }, this);
 
       const guiColors = gui.addFolder('Object Colors');
       // TODO: FIGURE OUT COLORS :DD
